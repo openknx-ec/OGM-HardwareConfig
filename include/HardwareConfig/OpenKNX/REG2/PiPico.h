@@ -34,18 +34,10 @@
  * OpenKNX REG2-Pi-Pico
  */
 
-/* Needs the new macro in common! 
-#if EITHER( DEVICE_REG2_PIPICO_V1, DEVICE_REG2_PIPICO_V1_DD_METER, DEVICE_REG2_PIPICO_ETH_V1, \
-            DEVICE_REG2_PIPICO_ETH_V1_DD_METER, DEVICE_REG2_PIPICO_W_V1, DEVICE_REG2_PIPICO_W_V1_DD_METER, \
-            DEVICE_REG2_PIPICO_W_ETH_V1, DEVICE_REG2_PIPICO_W_ETH_V1_DD_METER)
-    #define PREFIX_ID "REG2-PP-V1" // 12 characters
-    #define PREFIX_NAME "OpenKNX REG2 PiPico V1" // 24 characters
-#endif
-*/
-#if defined(DEVICE_REG2_PIPICO_V1) || defined(DEVICE_REG2_PIPICO_V1_DD_METER) || defined(DEVICE_REG2_PIPICO_ETH_V1) || \
-  defined(DEVICE_REG2_PIPICO_ETH_V1_DD_METER) || defined(DEVICE_REG2_PIPICO_W_V1) || defined(DEVICE_REG2_PIPICO_W_V1_DD_METER) || \
-  defined(DEVICE_REG2_PIPICO_W_ETH_V1) || defined(DEVICE_REG2_PIPICO_W_ETH_V1_DD_METER) || defined(DEVICE_REG2_PIPICO_V1_DD_RTC) || \
-  defined(DEVICE_REG2_PIPICO_W_V1_DD_RTC)
+#if ANY( DEVICE_REG2_PIPICO_V1, DEVICE_REG2_PIPICO_V1_DD_METER, DEVICE_REG2_PIPICO_ETH_V1, \
+  DEVICE_REG2_PIPICO_ETH_V1_DD_METER, DEVICE_REG2_PIPICO_W_V1, DEVICE_REG2_PIPICO_W_V1_DD_METER, \
+  DEVICE_REG2_PIPICO_W_ETH_V1, DEVICE_REG2_PIPICO_W_ETH_V1_DD_METER, DEVICE_REG2_PIPICO_V1_DD_RTC, \
+  DEVICE_REG2_PIPICO_W_V1_DD_RTC, DEVICE_REG2_PIPICO_ETH_V1_DD )
   #define PREFIX_ID "REG2-PP-V1" // 12 characters
   #define PREFIX_NAME "OpenKNX REG2 PiPico V1" // 24 characters
 #endif
@@ -56,8 +48,8 @@
     #define DEVICE_NAME PREFIX_NAME
     #define OKNXHW_REG2_PIPICO_V1_COMMON // Common pins for all REG2-Pi-Pico
     #define OKNXHW_REG2_PIPICO_V1_LED1   // LED1
-    #define OKNXHW_REG2_PIPICO_V1_LED2   // LED2
-    #define OKNXHW_REG2_PIPICO_V1_LED3   // LED3
+    //#define OKNXHW_REG2_PIPICO_V1_LED2   // LED2
+    //#define OKNXHW_REG2_PIPICO_V1_LED3   // LED3
 #endif
 
 
@@ -67,8 +59,8 @@
     #define DEVICE_NAME PREFIX_NAME " DeviceDisplay RTC" // 24 + 16 = 40 characters
     #define OKNXHW_REG2_PIPICO_V1_COMMON // Common pins for all REG2-Pi-Pico
     #define OKNXHW_REG2_PIPICO_V1_LED1   // LED1
-    #define OKNXHW_REG2_PIPICO_V1_LED2   // LED2
-    #define OKNXHW_REG2_PIPICO_V1_LED3   // LED3
+    //#define OKNXHW_REG2_PIPICO_V1_LED2   // LED2
+    //#define OKNXHW_REG2_PIPICO_V1_LED3   // LED3
     #define OKNXHW_REG2_DEVICE_DISPLAY   // Device Display Support
     #define OKNXHW_REG2_DEVICE_RTC      // RTC Support
 #endif
@@ -79,34 +71,35 @@
     #define DEVICE_NAME PREFIX_NAME " DeviceDisplay Meter" // 24 + 16 = 40 characters
     #define OKNXHW_REG2_PIPICO_V1_COMMON // Common pins for all REG2-Pi-Pico
     #define OKNXHW_REG2_PIPICO_V1_LED1   // LED1
-    #define OKNXHW_REG2_PIPICO_V1_LED2   // LED2
-    #define OKNXHW_REG2_PIPICO_V1_LED3   // LED3
+    //#define OKNXHW_REG2_PIPICO_V1_LED2   // LED2
+    //#define OKNXHW_REG2_PIPICO_V1_LED3   // LED3
     #define OKNXHW_REG2_DEVICE_DISPLAY   // Device Display Support
     #define OKNXHW_REG2_METER            // Meter Support
     #define OKNXHW_REG2_DEVICE_RTC      // RTC Support
 #endif
 
-// REG2-Pi-Pico V1 ETH App
-#ifdef DEVICE_REG2_PIPICO_ETH_V1
-    #define DEVICE_ID   PREFIX_ID "-ETH" // 12 + 4 = 16 characters
+// REG2-Pi-Pico V1 ETH App Device Display with Front Control
+#ifdef DEVICE_REG2_PIPICO_ETH_V1_DD
+    #define DEVICE_ID   PREFIX_ID "-ETHDD" // 12 + 4 = 16 characters
     #define DEVICE_NAME PREFIX_NAME " Ethernet" // 24 + 9 = 33 characters
     #define DEVICE_REG2_PIPICO_V1
     #define OKNXHW_REG2_PIPICO_V1_COMMON
     #define OKNXHW_REG2_PIPICO_V1_LED1
-    #define OKNXHW_REG2_PIPICO_V1_LED2
-    #define OKNXHW_REG2_PIPICO_V1_LED3
+    //#define OKNXHW_REG2_PIPICO_V1_LED2 // ToDo: Setup DD Front Control LEDs for Ethernet App
+    //#define OKNXHW_REG2_PIPICO_V1_LED3 // ToDo: Setup DD Front Control LEDs for Ethernet App
     #define OKNXHW_REG2_PIPICO_APP_ETH
+    #define OKNXHW_REG2_DEVICE_DISPLAY_ETH
 #endif
 
 // REG2-Pi-Pico V1 ETH App (Device Display + Meter)
 #ifdef DEVICE_REG2_PIPICO_ETH_V1_DD_METER
-    #define DEVICE_ID   PREFIX_ID "-ETH-DD" // 12 + 12 = 24 characters
+    #define DEVICE_ID   PREFIX_ID "-ETHDDM" // 12 + 12 = 24 characters
     #define DEVICE_NAME PREFIX_NAME " Eth DD Meter" // 24 + 14 = 38 characters
     #define DEVICE_REG2_PIPICO_V1
     #define OKNXHW_REG2_PIPICO_V1_COMMON
     #define OKNXHW_REG2_PIPICO_V1_LED1
-    #define OKNXHW_REG2_PIPICO_V1_LED2
-    #define OKNXHW_REG2_PIPICO_V1_LED3
+    //#define OKNXHW_REG2_PIPICO_V1_LED2
+    //#define OKNXHW_REG2_PIPICO_V1_LED3
     #define OKNXHW_REG2_PIPICO_APP_ETH
     #define OKNXHW_REG2_DEVICE_DISPLAY
     #define OKNXHW_REG2_METER
@@ -184,11 +177,18 @@
  */
 
 // REG2-Pi-Pico FwF: Device Display Support
-#ifdef OKNXHW_REG2_DEVICE_DISPLAY
+#if ANY( OKNXHW_REG2_DEVICE_DISPLAY, OKNXHW_REG2_DEVICE_DISPLAY_ETH)
     // Default pins for the I2C bus to connect the hardware display
     #define OKNXHW_REG2_HWDISPLAY_I2C_INST i2c1    // i2c1 | i2c0
-    #define OKNXHW_REG2_HWDISPLAY_I2C_SDA 26       // GPIO26 | SPI1 SCK | UART0 CTS | I2C1 SDA | PWM5 A | ADC0
-    #define OKNXHW_REG2_HWDISPLAY_I2C_SCL 27       // GPIO27 | SPI1 TX  | UART0 RX  | I2C0 SCL | PWM6 B | ADC1
+
+    #ifdef OKNXHW_REG2_DEVICE_DISPLAY_ETH           // With Apps we need to use other pins!
+      #define OKNXHW_REG2_HWDISPLAY_I2C_SDA 22      // GPIO22 | SPI0 SCK | UART1 TX | I2C1 SDA | PWM3 A | ADC2
+      #define OKNXHW_REG2_HWDISPLAY_I2C_SCL 15      // GPIO15 | SPI0 TX  | UART1 RX | I2C1 SCL | PWM2 B | ADC3
+    #else
+      #define OKNXHW_REG2_HWDISPLAY_I2C_SDA 26       // GPIO26 | SPI1 SCK | UART0 CTS | I2C1 SDA | PWM5 A | ADC0
+      #define OKNXHW_REG2_HWDISPLAY_I2C_SCL 27       // GPIO27 | SPI1 TX  | UART0 RX  | I2C0 SCL | PWM6 B | ADC1
+    #endif
+
     #define OKNXHW_REG2_HWDISPLAY_I2C_ADDRESS 0x3C // Set here the i2c address of the display. I.e. 0x3C, 0x3D
     #define OKNXHW_REG2_HWRTCLOCK_I2C_ADDRESS 0x68 // Set here the i2c address of the RTC. I.e. 0x68 for DS3231. 0x57 for PCF8523. 0x51 for DS3232
     #define OKNXHW_REG2_DEVICE_DISPLAY_WIDTH 128   // Set here the width of the device display. I.e. 128
@@ -252,14 +252,14 @@
     #define INFO1_LED_PIN_ACTIVE_ON HIGH
 #endif
 
-// REG2-Pi-Pico V1: Info2 LED
+// REG2-Pi-Pico V1: Info2 LED (Only in Combination with Device Display Front Control)
 #ifdef OKNXHW_REG2_PIPICO_V1_LED2
-    #define INFO2_LED_PIN 3
+    #define INFO2_LED_PIN -1
     #define INFO2_LED_PIN_ACTIVE_ON HIGH
 #endif
-// REG2-Pi-Pico V1: Info3 LED
+// REG2-Pi-Pico V1: Info3 LED (Only in Combination with Device Display Front Control)
 #ifdef OKNXHW_REG2_PIPICO_V1_LED3
-    #define INFO3_LED_PIN 21
+    #define INFO3_LED_PIN -1
     #define INFO3_LED_PIN_ACTIVE_ON HIGH
 #endif
 
@@ -322,6 +322,6 @@
     #define PIN_ETH_SS (REG2_APP_PIN6)   // ETH_CS   - GPIO17 SPI0 CSn UART0 RX I2C0 SCL PWM0_B SIO PIO0 PIO1
     #define PIN_ETH_SCK (REG2_APP_PIN5)  // ETH_SCK  - GPIO18 SPI0 SCK UART0 CTS I2C1 SDA PWM1_A SIO PIO0 PIO1
     #define PIN_ETH_MOSI (REG2_APP_PIN1) // ETH_MOSI - GPIO19 SPI0 TX UART0 RTS I2C1 SCL PWM1_B SIO PIO0 PIO1
-    #define PIN_ETH_INT (REG2_APP_PIN4)  // ETH_RES  - GPIO26 SPI1 SCK UART0 CTS I2C1 SDA PWM5_A SIO PIO0 PIO1
-    #define PIN_ETH_RES (REG2_APP_PIN3)  // ETH_INT  - GPIO27 SPI1 TX UART0 RTS I2C1 SCL PWM5_B SIO PIO0 PIO1
+    #define PIN_ETH_INT (REG2_APP_PIN3)  // ETH_INT  - GPIO27 SPI1 TX UART0 RTS I2C1 SCL PWM5_B SIO PIO0 PIO1
+    #define PIN_ETH_RES (REG2_APP_PIN4)  // ETH_RES  - GPIO26 SPI1 SCK UART0 CTS I2C1 SDA PWM5_A SIO PIO0 PIO1
 #endif

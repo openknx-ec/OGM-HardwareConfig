@@ -1,4 +1,5 @@
 #pragma once
+#include "macros.h"
 /**
  * OpenKNX Hardware definition header file
  * 
