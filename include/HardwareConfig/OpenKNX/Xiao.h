@@ -243,11 +243,11 @@
 
 // OpenKNXiao ESP32S3 pins
 #ifdef OKNXHW_OPENKNXIAO_ESP32S3_V1_COMMON
-    #define PROG_LED_PIN 21                      // Build-In LED RED (RED:GPIO17 | GREEN:GPIO16 | BLUE:GPIO25)
-    #define PROG_LED_PIN_ACTIVE_ON HIGH          // Active on HIGH
-    #define PROG_BUTTON_PIN 1                    // GPIO01 
-    #define PROG_BUTTON_PIN_INTERRUPT_ON FALLING // Interrupt on FALLING
-    #define KNX_SERIAL Serial1                   // Serial1 for UART1
+    #define PROG_LED_PIN 21                       // Build-In LED ORANGE
+    #define PROG_LED_PIN_ACTIVE_ON LOW            // Active on LOW
+    #define PROG_BUTTON_PIN 1                     // GPIO01 
+    #define PROG_BUTTON_PIN_INTERRUPT_ON FALLING  // Interrupt on FALLING
+    #define KNX_SERIAL Serial1                    // Serial1 for UART1
     #define KNX_UART_RX_PIN 44                    // GPIO44 | SPI1 RX  | UART1 RX  | I2C0 SCL | PWM0 B
     #define KNX_UART_TX_PIN 43                    // GPIO43 | SPI1 TX  | UART1 TX  | I2C0 SDA | PWM0 A
 
