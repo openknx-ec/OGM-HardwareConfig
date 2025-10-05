@@ -222,7 +222,7 @@
                 FRONT_CTRL_OK, \
                 FRONT_CTRL_UP
 
-    #define OPENKNX_GPIO_NUM    1
+    #define OPENKNX_GPIO_NUM    1 // Total number of GPIO expanders used
     #define OPENKNX_GPIO_TYPES  OPENKNX_GPIO_T_PCA9557
     #define OPENKNX_GPIO_ADDRS  0x18      // PCA9557 I2C address 0x18 (A0-A2 = 0) A0-A2 are connected to GND if A1 is connected to VCC the address is 0x19
     #define OPENKNX_GPIO_INTS   0xFF
