@@ -21,7 +21,7 @@
     || defined(OKNXHW_REG2_ESP_S3_PICO_W_V1_DD_METER) \
     || defined(OKNXHW_REG2_ESP_S3_PICO_W_ETH_V1) \
     || defined(OKNXHW_REG2_ESP_S3_PICO_W_ETH_V1_DD_METER)
-  
+
     #define PREFIX_ID "REG2-ESP-V1"                // 12 characters
     #define PREFIX_NAME "OpenKNX REG2 ESP-Pico V1" // 24 characters
 #endif
@@ -29,8 +29,8 @@
 // REG2-ESP-S3-Pico V1 (Base)
 #if defined(OKNXHW_REG2_ESP_S3_PICO_V1)
     #define DEVICE_ID PREFIX_ID ""
-    #define DEVICE_NAME PREFIX_NAME ""                 // 24 characters
-    #define OKNXHW_REG2_ESPS3PICO_V1_COMMON          // Common pins for all REG2-ESP-S3-Pico V1
+    #define DEVICE_NAME PREFIX_NAME ""      // 24 characters
+    #define OKNXHW_REG2_ESPS3PICO_V1_COMMON // Common pins for all REG2-ESP-S3-Pico V1
     #define OKNXHW_REG2_ESPS3PICO_V1_SAVE_INTERRUPT
     // #define OKNHW_HAS_SERIALLED_COLOR
     // #define OKNXHW_REG2_PIPICO_V1_LED1                   // LED1
@@ -39,7 +39,6 @@
     #define OKNXHW_REG2_ESP_USING_APP_BOARD
     #define OKNXHW_REG2_ESPS3PICO_APP_ETH
 #endif
-
 
 // REG2-ESP-S3-Pico V1 (Device Display)
 #if defined(OKNXHW_REG2_ESP_S3_PICO_V1_DD)
@@ -51,7 +50,7 @@
     // #define OKNXHW_REG2_PIPICO_V1_LED1                   // LED1
     // #define OKNXHW_REG2_PIPICO_V1_LED2   // LED2 ToDo: Set Device Display Front Control LED
     // #define OKNXHW_REG2_PIPICO_V1_LED3   // LED3 ToDo: Set Device Display Front Control LED
-    #define OKNXHW_REG2_ESP_DEVICE_DISPLAY      // Device Display Support
+    #define OKNXHW_REG2_ESP_DEVICE_DISPLAY // Device Display Support
     #define OKNXHW_REG2_ESP_USING_APP_BOARD
     #define OKNXHW_REG2_ESPS3PICO_APP_ETH
 #endif
@@ -64,20 +63,20 @@
 // REG2-ESP-S3-Pico V1 CHW Pins
 #ifdef OKNXHW_REG2_ESPS3PICO_V1_COMMON
     #ifndef OKNHW_HAS_SERIALLED_COLOR
-        #define PROG_LED_PIN 13              // ESP32 GPIO13 | PI PICO GPIO2
+        #define PROG_LED_PIN 13 // ESP32 GPIO13 | PI PICO GPIO2
         #define PROG_LED_PIN_ACTIVE_ON HIGH
     #endif
-    
-    #define PROG_BUTTON_PIN 4                   // ESP32 GPIO4  | PI PICO GPIO20
-    #define PROG_BUTTON_PIN_MODE INPUT_PULLUP   // Using internal pullup of the ESP32 (aprox. 45kOhm)
-    #define OPENKNX_BUTTON_DEBOUNCE 0           // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
-    
-    #define KNX_SERIAL Serial1                  // Uart0
-    #define KNX_UART_NUM 0                      // Uart0
-    #define KNX_UART_RX_PIN 12  // ESP32 GPIO12 | PI PICO GPIO1
-    #define KNX_UART_TX_PIN 11  // ESP32 GPIO11 | PI PICO GPIO0
 
-    #define NEOPIX_LED_PIN 21   // RGB LED on the ESP32-S3-Pico
+    #define PROG_BUTTON_PIN 4                 // ESP32 GPIO4  | PI PICO GPIO20
+    #define PROG_BUTTON_PIN_MODE INPUT_PULLUP // Using internal pullup of the ESP32 (aprox. 45kOhm)
+    #define OPENKNX_BUTTON_DEBOUNCE 0         // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
+
+    #define KNX_SERIAL Serial1 // Uart0
+    #define KNX_UART_NUM 0     // Uart0
+    #define KNX_UART_RX_PIN 12 // ESP32 GPIO12 | PI PICO GPIO1
+    #define KNX_UART_TX_PIN 11 // ESP32 GPIO11 | PI PICO GPIO0
+
+    #define NEOPIX_LED_PIN 21 // RGB LED on the ESP32-S3-Pico
     #define NEOPIX_LED_COUNT 1
     #define NEOPIX_LED_TYPE NEO_GRB + NEO_KHZ800 // WS2812B
     #define NEOPIX_LED_ORDER NEO_GRB
@@ -178,66 +177,121 @@
 
 // REG2-ESP-S3-Pico FwF: Device Display Support
 #if defined(OKNXHW_REG2_ESP_DEVICE_DISPLAY) || defined(OKNXHW_REG2_ESP_USING_APP_BOARD)
-    // Default pins for the I2C bus to connect the hardware display
-    #ifdef ARDUINO_ARCH_ESP32
-        #define OKNXHW_REG2_HWDISPLAY_I2C_INST Wire1
-    #else
-        #define OKNXHW_REG2_HWDISPLAY_I2C_INST i2c1 // i2c1 | i2c0
-    #endif
-
     #ifdef OKNXHW_REG2_ESP_USING_APP_BOARD
-        #define OKNXHW_REG2_HWDISPLAY_I2C_SDA REG2_TERM_PIN10  // ESP32 GPIO6  | PI PICO GPIO22
-        #define OKNXHW_REG2_HWDISPLAY_I2C_SCL REG2_APP_PIN11 // ESP32 GPIO40 | PI PICO GPIO15
+        #define OKNXHW_REG2_HWDISPLAY_I2C_SDA REG2_TERM_PIN10 // ESP32 GPIO6  | PI PICO GPIO22
+        #define OKNXHW_REG2_HWDISPLAY_I2C_SCL REG2_APP_PIN11  // ESP32 GPIO40 | PI PICO GPIO15
     #else
         #define OKNXHW_REG2_HWDISPLAY_I2C_SDA 7 // ESP32 GPIO7 | PICO GPIO26
         #define OKNXHW_REG2_HWDISPLAY_I2C_SCL 8 // ESP32 GPIO8 | PICO GPIO27
     #endif
+
+    /*
+     * OpenKNX I2C / WIRE Definitions
+     * Choose one or more of the following definitions to use for I2C communication
+     */
+    #define OPENKNX_WIRE_PIO // Enables WIRE_PIO
+    // #define OPENKNX_WIRE1_PIO // Enables WIRE1_PIO
+    // #define OPENKNX_WIRE      // Enables WIRE
+    // #define OPENKNX_WIRE1     // Enables WIRE1
+
+    #ifdef OPENKNX_WIRE_PIO // WIRE_PIO
+        #define OPENKNX_WIRE_PIO_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE_PIO_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL // must be +1 of SDA
+        #define OPENKNX_WIRE_PIO_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE_PIO
+    #endif
+    #ifdef OPENKNX_WIRE1_PIO // WIRE1_PIO
+        #define OPENKNX_WIRE1_PIO_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE1_PIO_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL // must be +1 of SDA
+        #define OPENKNX_WIRE1_PIO_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE1_PIO
+    #endif
+    #ifdef OPENKNX_WIRE // WIRE
+        #define OPENKNX_WIRE_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL
+        #define OPENKNX_WIRE_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE
+    #endif
+    #ifdef OPENKNX_WIRE1 // WIRE1
+        #define OPENKNX_WIRE1_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE1_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL
+        #define OPENKNX_WIRE1_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE1
+    #endif
+
+    #ifndef OPENKNX_WIRE_USE
+        #define OPENKNX_WIRE_USE Wire1 // Fallback to default
+    #endif
+
+    // I2C Clock Frequency
+    #define OKNXHW_REG2_HWDISPLAY_I2C_CLOCK 400000 // I2C Clock Frequency in Hz (400kHz for fast I2C communication)
+
+    // Display and Display Size (SSD1306 / SSD1315 / ...  OLED Display 128x64)
     #define OKNXHW_REG2_HWDISPLAY_I2C_ADDRESS 0x3C // Set here the i2c address of the display. I.e. 0x3C, 0x3D
-    #define OKNXHW_REG2_HWRTCLOCK_I2C_ADDRESS 0x68 // Set here the i2c address of the RTC. I.e. 0x68 for DS3231. 0x57 for PCF8523. 0x51 for DS3232
     #define OKNXHW_REG2_DEVICE_DISPLAY_WIDTH 128   // Set here the width of the device display. I.e. 128
     #define OKNXHW_REG2_DEVICE_DISPLAY_HEIGHT 64   // Set here the height of the device display. I.e. 64
 
-    // Set there now the generall setting definition for the OFM-DeviceDisplay
-    #define OPENKNX_GPIO_SDA OKNXHW_REG2_HWDISPLAY_I2C_SDA
-    #define OPENKNX_GPIO_SCL OKNXHW_REG2_HWDISPLAY_I2C_SCL
+    // I2C RTC Adress Definition
+    #define OKNXHW_REG2_HWRTCLOCK_I2C_ADDRESS 0x68 // Set here the i2c address of the RTC. I.e. 0x68 for DS3231. 0x57 for PCF8523. 0x51 for DS3232
 
-    // Define the 8 GPIO Pins of the PCA9557 I2C GPIO Expander
-    #define FRONT_CTRL_LEFT   0x100   // PIN 0 (LEFT)
-    #define FRONT_CTRL_LED1_R 0x101   // PIN 1 (RED LED)
-    #define FRONT_CTRL_LED2_G 0x102   // PIN 2 (GREEN LED)
-    #define FRONT_CTRL_LEFT2  0x103   // PIN 3 (LEFT2) !!
-    #define FRONT_CTRL_DOWN   0x104   // PIN 4 (DOWN)
-    #define FRONT_CTRL_RIGHT  0x105   // PIN 5 (RIGHT)
-    #define FRONT_CTRL_OK     0x106   // PIN 6 (OK / SELECT)
-    #define FRONT_CTRL_UP     0x107   // PIN 7 (UP)
-
+    // I2C GPIO Expander Adress and Pin Definitions
+    #define OKNXHW_REG2_HWI2C_GPIOEXPANDER_I2C_ADDRESS 0x18 // Set here the i2c address of the GPIO Expander. I.e. 0x18 for PCA9557 with A0-A2 = GND if A1 is connected to VCC the address is 0x19
+    #define FRONT_CTRL_LEFT 0x100                           // PIN 0 (LEFT)
+    #define FRONT_CTRL_LED1_R 0x101                         // PIN 1 (RED LED)
+    #define FRONT_CTRL_LED2_G 0x102                         // PIN 2 (GREEN LED)
+    #define FRONT_CTRL_LEFT2 0x103                          // PIN 3 (LEFT2)
+    #define FRONT_CTRL_DOWN 0x104                           // PIN 4 (DOWN)
+    #define FRONT_CTRL_RIGHT 0x105                          // PIN 5 (RIGHT)
+    #define FRONT_CTRL_OK 0x106                             // PIN 6 (OK / SELECT)
+    #define FRONT_CTRL_UP 0x107                             // PIN 7 (UP)
     #define OPENKNX_PCA9557_PINS_COUNT 8
     #define OPENKNX_PCA9557_PINS \
-                FRONT_CTRL_LEFT, \
-                FRONT_CTRL_LED1_R, \
-                FRONT_CTRL_LED2_G, \
-                FRONT_CTRL_LEFT2, \
-                FRONT_CTRL_DOWN, \
-                FRONT_CTRL_RIGHT, \
-                FRONT_CTRL_OK, \
-                FRONT_CTRL_UP
+        FRONT_CTRL_LEFT,         \
+            FRONT_CTRL_LED1_R,   \
+            FRONT_CTRL_LED2_G,   \
+            FRONT_CTRL_LEFT2,    \
+            FRONT_CTRL_DOWN,     \
+            FRONT_CTRL_RIGHT,    \
+            FRONT_CTRL_OK,       \
+            FRONT_CTRL_UP
 
-    #define OPENKNX_GPIO_NUM    1 // Total number of GPIO expanders used
-    #define OPENKNX_GPIO_TYPES  OPENKNX_GPIO_T_PCA9557
-    #define OPENKNX_GPIO_ADDRS  0x18      // PCA9557 I2C address 0x18 (A0-A2 = 0) A0-A2 are connected to GND if A1 is connected to VCC the address is 0x19
-    #define OPENKNX_GPIO_INTS   0xFF
-    #define OPENKNX_GPIO_WIRE   OKNXHW_REG2_HWDISPLAY_I2C_INST  // Must be the same as OKNXHW_REG2_HWDISPLAY_I2C_INST
-    #define OPENKNX_GPIO_CLOCK  400000    // I2C Taktfrequenz in Hz (400kHz für schnelle I2C-Kommunikation)
-
-    #define OKNXHW_DEVICE_DISPLAY_I2C_INST    OKNXHW_REG2_HWDISPLAY_I2C_INST
-    #define OKNXHW_DEVICE_DISPLAY_I2C_SDA     OKNXHW_REG2_HWDISPLAY_I2C_SDA
-    #define OKNXHW_DEVICE_DISPLAY_I2C_SCL     OKNXHW_REG2_HWDISPLAY_I2C_SCL
+    // Define the I2C instance for the Device Display
+    #define OKNXHW_DEVICE_DISPLAY_I2C_INST OKNXHW_REG2_HWDISPLAY_I2C_INST
+    #define OKNXHW_DEVICE_DISPLAY_I2C_SDA OKNXHW_REG2_HWDISPLAY_I2C_SDA
+    #define OKNXHW_DEVICE_DISPLAY_I2C_SCL OKNXHW_REG2_HWDISPLAY_I2C_SCL
     #define OKNXHW_DEVICE_DISPLAY_I2C_ADDRESS OKNXHW_REG2_HWDISPLAY_I2C_ADDRESS
-    #define OKNXHW_DEVICE_DISPLAY_WIDTH       OKNXHW_REG2_DEVICE_DISPLAY_WIDTH
-    #define OKNXHW_DEVICE_DISPLAY_HEIGHT      OKNXHW_REG2_DEVICE_DISPLAY_HEIGHT
+    #define OKNXHW_DEVICE_DISPLAY_WIDTH OKNXHW_REG2_DEVICE_DISPLAY_WIDTH
+    #define OKNXHW_DEVICE_DISPLAY_HEIGHT OKNXHW_REG2_DEVICE_DISPLAY_HEIGHT
+
+    // Define the GPIO Pins for Expander Frontplate Control
+    #define OPENKNX_GPIO_WIRE WIRE_PIO
+    #define OPENKNX_GPIO_SDA OKNXHW_REG2_HWDISPLAY_I2C_SDA
+    #define OPENKNX_GPIO_SCL OKNXHW_REG2_HWDISPLAY_I2C_SCL
+    #define OPENKNX_GPIO_ADDRS OKNXHW_REG2_HWI2C_GPIOEXPANDER_I2C_ADDRESS
+    #define OPENKNX_GPIO_NUM 1 // Total number of GPIO expanders used
+    #define OPENKNX_GPIO_TYPES OPENKNX_GPIO_T_PCA9557
+    #define OPENKNX_GPIO_INTS 0xFF
+    #define OPENKNX_GPIO_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+
+    // Define here the Infor LEDs: INFO1 = RED, INFO2 = GREEN
+    #define INFO1_LED_PIN FRONT_CTRL_LED1_R // 0x101
+    #define INFO1_LED_PIN_ACTIVE_ON HIGH
+    #define INFO2_LED_PIN FRONT_CTRL_LED2_G // 0x102
+    #define INFO2_LED_PIN_ACTIVE_ON HIGH
 
 #endif // REG2-ESP-S3-Pico FwF: Device Display Support
 
+// ESP32-S3-Pico External Flash Support
+#ifdef OKNXHW_REG2_EXTERNAL_FLASH
+    // Default pins for the SPI bus to connect the external flash W25Q128
+    #define OKNXHW_REG2_EXTFLASH_SPI_INST SPI1 // spi1 | spi0
+    #define OKNXHW_REG2_EXTFLASH_SPI_CS 13     // Chip Select Pin
+    #define OKNXHW_REG2_EXTFLASH_SPI_SCK 10    // Clock Pin
+    #define OKNXHW_REG2_EXTFLASH_SPI_MOSI 11   // MOSI Pin
+    #define OKNXHW_REG2_EXTFLASH_SPI_MISO 12   // MISO Pin
+    #define OKNXHW_REG2_EXTFLASH_SPI_WP 14     // Write Protect Pin
+    #define OKNXHW_REG2_EXTFLASH_SPI_HOLD 15   // Hold Pin
+#endif                                         // REG2-Pi-Pico FwF: External Flash Support
 
 // pio board definition for the Waveshare ESP-S3-Pico
 /*

@@ -49,7 +49,6 @@
     #define PREFIX_NAME "OpenKNX REG2 PiPico2 V1" // 25 characters
 #endif
 
-
 // REG2-Pi-Pico V1
 #if defined(DEVICE_REG2_PIPICO_V1) || defined(DEVICE_REG2_PIPICO2_V1)
     #define DEVICE_ID PREFIX_ID
@@ -98,6 +97,7 @@
     #define OKNXHW_REG2_DEVICE_DISPLAY // Device Display Support
     #define OKNXHW_REG2_METER          // Meter Support
     #define OKNXHW_REG2_DEVICE_RTC     // RTC Support
+    #define OKNXHW_REG2_EXTERNAL_FLASH // External Flash Support
 #endif
 
 // REG2-Pi-Pico V1 ETH App
@@ -140,9 +140,9 @@
     #define DEVICE_NAME PREFIX_NAME " WiFi" // 24 + 5 = 29 characters --> + 14 = 43 characters
     #define OKNXHW_REG2_PIPICO_V1_COMMON
     #define OKNXHW_REG2_PIPICO_V1_SAVE_INTERRUPT
-    #define OKNXHW_REG2_PIPICO_W_V1_LED1
-    //#define OKNXHW_REG2_PIPICO_V1_LED2
-    //#define OKNXHW_REG2_PIPICO_V1_LED3
+    // #define OKNXHW_REG2_PIPICO_W_V1_LED1
+    // #define OKNXHW_REG2_PIPICO_V1_LED2
+    // #define OKNXHW_REG2_PIPICO_V1_LED3
 #endif
 
 // REG2-Pi-Pico Wi-Fi V1
@@ -151,7 +151,7 @@
     #define DEVICE_NAME PREFIX_NAME " WiFi" // 24 + 5 = 29 characters --> + 14 = 43 characters
     #define OKNXHW_REG2_PIPICO_V1_COMMON
     #define OKNXHW_REG2_PIPICO_V1_SAVE_INTERRUPT
-    #define OKNXHW_REG2_PIPICO_W_V1_LED1
+    // #define OKNXHW_REG2_PIPICO_W_V1_LED1
     // #define OKNXHW_REG2_PIPICO_V1_LED2
     // #define OKNXHW_REG2_PIPICO_V1_LED3
     #define OKNXHW_REG2_DEVICE_DISPLAY
@@ -176,11 +176,12 @@
     #define DEVICE_NAME PREFIX_NAME " WiFi Display Meter" // 24 + 20 = 44 characters --> + 20 = 64 characters
     #define OKNXHW_REG2_PIPICO_V1_COMMON
     #define OKNXHW_REG2_PIPICO_V1_SAVE_INTERRUPT
-    #define OKNXHW_REG2_PIPICO_W_V1_LED1
-    //#define OKNXHW_REG2_PIPICO_V1_LED2
-    //#define OKNXHW_REG2_PIPICO_V1_LED3
+    // #define OKNXHW_REG2_PIPICO_W_V1_LED1
+    // #define OKNXHW_REG2_PIPICO_V1_LED2
+    // #define OKNXHW_REG2_PIPICO_V1_LED3
     #define OKNXHW_REG2_DEVICE_DISPLAY
     #define OKNXHW_REG2_METER
+    #define OKNXHW_REG2_EXTERNAL_FLASH // External Flash Support
 #endif
 
 // REG2-Pi-Pico WiFi V1 ETH App
@@ -198,14 +199,14 @@
 
 // REG2-Pi-Pico WiFi V1 ETH App (Device Display)
 #if defined(DEVICE_REG2_PIPICO_W_V1_ETH_DD) || defined(DEVICE_REG2_PIPICO2_W_V1_ETH_DD)
-    #define DEVICE_ID PREFIX_ID "-W-ETH-DD"           // 12 + 12 = 24 characters
+    #define DEVICE_ID PREFIX_ID "-W-ETH-DD"                  // 12 + 12 = 24 characters
     #define DEVICE_NAME PREFIX_NAME " WiFi Ethernet Display" // 24 + 20 = 44 characters --> + 24 = 68 characters
     #define DEVICE_REG2_PIPICO_W_V1
     #define OKNXHW_REG2_PIPICO_V1_COMMON
     #define OKNXHW_REG2_PIPICO_V1_SAVE_INTERRUPT
-    #define OKNXHW_REG2_PIPICO_W_V1_LED1
-    //#define OKNXHW_REG2_PIPICO_V1_LED2
-    // #define OKNXHW_REG2_PIPICO_V1_LED3
+    // #define OKNXHW_REG2_PIPICO_W_V1_LED1
+    // #define OKNXHW_REG2_PIPICO_V1_LED2
+    #define OKNXHW_REG2_PIPICO_V1_LED3
     #define OKNXHW_REG2_DEVICE_DISPLAY
     #define OKNXHW_REG2_PIPICO_APP_ETH
 #endif
@@ -217,9 +218,8 @@
 
 // REG2-Pi-Pico FwF: Device Display Support
 #if defined(OKNXHW_REG2_DEVICE_DISPLAY) || defined(OKNXHW_REG2_USING_APP_BOARD)
-    // Default pins for the I2C bus to connect the hardware display
-    #define OKNXHW_REG2_HWDISPLAY_I2C_INST i2c1 // i2c1 | i2c0
 
+    // Internal Definitions for Device Display and Frontplate Control - I2C HW Pins
     #ifdef OKNXHW_REG2_USING_APP_BOARD
         #define OKNXHW_REG2_HWDISPLAY_I2C_SDA 22 // GPIO22 | SPI0 SCK | UART1 TX | I2C1 SDA | PWM3 A | ADC2
         #define OKNXHW_REG2_HWDISPLAY_I2C_SCL 15 // GPIO15 | SPI0 TX  | UART1 RX | I2C1 SCL | PWM2 B | ADC3
@@ -227,61 +227,112 @@
         #define OKNXHW_REG2_HWDISPLAY_I2C_SDA 26 // GPIO26 | SPI1 SCK | UART0 CTS | I2C1 SDA | PWM5 A | ADC0
         #define OKNXHW_REG2_HWDISPLAY_I2C_SCL 27 // GPIO27 | SPI1 TX  | UART0 RX  | I2C0 SCL | PWM6 B | ADC1
     #endif
+    /*
+     * OpenKNX I2C / WIRE Definitions
+     * Choose one or more of the following definitions to use for I2C communication
+     */
+    #define OPENKNX_WIRE_PIO  // Enables WIRE_PIO
+    //#define OPENKNX_WIRE1_PIO // Enables WIRE1_PIO
+    //#define OPENKNX_WIRE      // Enables WIRE
+    //#define OPENKNX_WIRE1     // Enables WIRE1
+
+    #ifdef OPENKNX_WIRE_PIO // WIRE_PIO
+        #define OPENKNX_WIRE_PIO_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE_PIO_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL // must be +1 of SDA
+        #define OPENKNX_WIRE_PIO_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE_PIO
+    #endif
+    #ifdef OPENKNX_WIRE1_PIO // WIRE1_PIO
+        #define OPENKNX_WIRE1_PIO_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE1_PIO_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL // must be +1 of SDA
+        #define OPENKNX_WIRE1_PIO_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE1_PIO
+    #endif
+    #ifdef OPENKNX_WIRE // WIRE
+        #define OPENKNX_WIRE_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL
+        #define OPENKNX_WIRE_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE
+    #endif
+    #ifdef OPENKNX_WIRE1 // WIRE1
+        #define OPENKNX_WIRE1_SDA_PIN OKNXHW_REG2_HWDISPLAY_I2C_SDA
+        #define OPENKNX_WIRE1_SCL_PIN OKNXHW_REG2_HWDISPLAY_I2C_SCL
+        #define OPENKNX_WIRE1_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+        #define OPENKNX_WIRE_USE WIRE1
+    #endif
+
+    #ifndef OPENKNX_WIRE_USE
+        #define OPENKNX_WIRE_USE Wire1 // Fallback to default
+    #endif
+
+    // I2C Clock Frequency
+    #define OKNXHW_REG2_HWDISPLAY_I2C_CLOCK 400000 // I2C Clock Frequency in Hz (400kHz for fast I2C communication)
+
+    // Display and Display Size (SSD1306 / SSD1315 / ...  OLED Display 128x64)
     #define OKNXHW_REG2_HWDISPLAY_I2C_ADDRESS 0x3C // Set here the i2c address of the display. I.e. 0x3C, 0x3D
-    #define OKNXHW_REG2_HWRTCLOCK_I2C_ADDRESS 0x68 // Set here the i2c address of the RTC. I.e. 0x68 for DS3231. 0x57 for PCF8523. 0x51 for DS3232
     #define OKNXHW_REG2_DEVICE_DISPLAY_WIDTH 128   // Set here the width of the device display. I.e. 128
     #define OKNXHW_REG2_DEVICE_DISPLAY_HEIGHT 64   // Set here the height of the device display. I.e. 64
 
-    // Set there now the generall setting definition for the OFM-DeviceDisplay
-    #define OPENKNX_GPIO_SDA OKNXHW_REG2_HWDISPLAY_I2C_SDA
-    #define OPENKNX_GPIO_SCL OKNXHW_REG2_HWDISPLAY_I2C_SCL
+    // I2C RTC Adress Definition
+    #define OKNXHW_REG2_HWRTCLOCK_I2C_ADDRESS 0x68 // Set here the i2c address of the RTC. I.e. 0x68 for DS3231. 0x57 for PCF8523. 0x51 for DS3232
 
-    // Define the 8 GPIO Pins of the PCA9557 I2C GPIO Expander
-    #define FRONT_CTRL_LEFT   0x100   // PIN 0 (LEFT)
-    #define FRONT_CTRL_LED1_R 0x101   // PIN 1 (RED LED)
-    #define FRONT_CTRL_LED2_G 0x102   // PIN 2 (GREEN LED)
-    #define FRONT_CTRL_LEFT2  0x103   // PIN 3 (LEFT2)
-    #define FRONT_CTRL_DOWN   0x104   // PIN 4 (DOWN)
-    #define FRONT_CTRL_RIGHT  0x105   // PIN 5 (RIGHT)
-    #define FRONT_CTRL_OK     0x106   // PIN 6 (OK / SELECT)
-    #define FRONT_CTRL_UP     0x107   // PIN 7 (UP)
-
+    // I2C GPIO Expander Adress and Pin Definitions
+    #define OKNXHW_REG2_HWI2C_GPIOEXPANDER_I2C_ADDRESS 0x18 // Set here the i2c address of the GPIO Expander. I.e. 0x18 for PCA9557 with A0-A2 = GND if A1 is connected to VCC the address is 0x19
+    #define FRONT_CTRL_LEFT 0x100                           // PIN 0 (LEFT)
+    #define FRONT_CTRL_LED1_R 0x101                         // PIN 1 (RED LED)
+    #define FRONT_CTRL_LED2_G 0x102                         // PIN 2 (GREEN LED)
+    #define FRONT_CTRL_LEFT2 0x103                          // PIN 3 (LEFT2)
+    #define FRONT_CTRL_DOWN 0x104                           // PIN 4 (DOWN)
+    #define FRONT_CTRL_RIGHT 0x105                          // PIN 5 (RIGHT)
+    #define FRONT_CTRL_OK 0x106                             // PIN 6 (OK / SELECT)
+    #define FRONT_CTRL_UP 0x107                             // PIN 7 (UP)
     #define OPENKNX_PCA9557_PINS_COUNT 8
     #define OPENKNX_PCA9557_PINS \
-                FRONT_CTRL_LEFT, \
-                FRONT_CTRL_LED1_R, \
-                FRONT_CTRL_LED2_G, \
-                FRONT_CTRL_LEFT2, \
-                FRONT_CTRL_DOWN, \
-                FRONT_CTRL_RIGHT, \
-                FRONT_CTRL_OK, \
-                FRONT_CTRL_UP
+        FRONT_CTRL_LEFT,         \
+            FRONT_CTRL_LED1_R,   \
+            FRONT_CTRL_LED2_G,   \
+            FRONT_CTRL_LEFT2,    \
+            FRONT_CTRL_DOWN,     \
+            FRONT_CTRL_RIGHT,    \
+            FRONT_CTRL_OK,       \
+            FRONT_CTRL_UP
 
-    #define OPENKNX_GPIO_NUM    1         // Total number of GPIO expanders used
-    #define OPENKNX_GPIO_TYPES  OPENKNX_GPIO_T_PCA9557
-    #define OPENKNX_GPIO_ADDRS  0x18      // PCA9557 I2C address 0x18 (A0-A2 = 0) A0-A2 are connected to GND if A1 is connected to VCC the address is 0x19
-    #define OPENKNX_GPIO_INTS   0xFF
-    #define OPENKNX_GPIO_WIRE   Wire1     // OKNXHW_REG2_HWDISPLAY_I2C_INST
-    #define OPENKNX_GPIO_CLOCK  400000    // I2C Taktfrequenz in Hz (400kHz für schnelle I2C-Kommunikation)
-
-    #define OKNXHW_DEVICE_DISPLAY_I2C_INST    OKNXHW_REG2_HWDISPLAY_I2C_INST
-    #define OKNXHW_DEVICE_DISPLAY_I2C_SDA     OKNXHW_REG2_HWDISPLAY_I2C_SDA
-    #define OKNXHW_DEVICE_DISPLAY_I2C_SCL     OKNXHW_REG2_HWDISPLAY_I2C_SCL
+    // Define the I2C instance for the Device Display
+    #define OKNXHW_DEVICE_DISPLAY_I2C_INST OPENKNX_WIRE_USE
+    #define OKNXHW_DEVICE_DISPLAY_I2C_SDA OKNXHW_REG2_HWDISPLAY_I2C_SDA
+    #define OKNXHW_DEVICE_DISPLAY_I2C_SCL OKNXHW_REG2_HWDISPLAY_I2C_SCL
     #define OKNXHW_DEVICE_DISPLAY_I2C_ADDRESS OKNXHW_REG2_HWDISPLAY_I2C_ADDRESS
-    #define OKNXHW_DEVICE_DISPLAY_WIDTH       OKNXHW_REG2_DEVICE_DISPLAY_WIDTH
-    #define OKNXHW_DEVICE_DISPLAY_HEIGHT      OKNXHW_REG2_DEVICE_DISPLAY_HEIGHT
+    #define OKNXHW_DEVICE_DISPLAY_WIDTH OKNXHW_REG2_DEVICE_DISPLAY_WIDTH
+    #define OKNXHW_DEVICE_DISPLAY_HEIGHT OKNXHW_REG2_DEVICE_DISPLAY_HEIGHT
+
+    // Define the GPIO Pins for Expander Frontplate Control
+    #define OPENKNX_GPIO_WIRE OPENKNX_WIRE_USE
+    #define OPENKNX_GPIO_SDA OKNXHW_REG2_HWDISPLAY_I2C_SDA
+    #define OPENKNX_GPIO_SCL OKNXHW_REG2_HWDISPLAY_I2C_SCL
+    #define OPENKNX_GPIO_ADDRS OKNXHW_REG2_HWI2C_GPIOEXPANDER_I2C_ADDRESS
+    #define OPENKNX_GPIO_NUM 1 // Total number of GPIO expanders used
+    #define OPENKNX_GPIO_TYPES OPENKNX_GPIO_T_PCA9557
+    #define OPENKNX_GPIO_INTS 0xFF
+    #define OPENKNX_GPIO_CLOCK OKNXHW_REG2_HWDISPLAY_I2C_CLOCK
+
+    // Define here the Infor LEDs: INFO1 = RED, INFO2 = GREEN
+    #define INFO1_LED_PIN FRONT_CTRL_LED1_R // 0x101
+    #define INFO1_LED_PIN_ACTIVE_ON HIGH
+    #define INFO2_LED_PIN FRONT_CTRL_LED2_G // 0x102
+    #define INFO2_LED_PIN_ACTIVE_ON HIGH
 
 #endif // REG2-Pi-Pico FwF: Device Display Support
 
 // REG2-Pi-Pico FwF: Device RTC Support
 #ifdef OKNXHW_REG2_DEVICE_RTC
+    #define OKNXHW_ENABLE_HWRTC // Hardware RTC Support
     // Default pins for the I2C bus to connect the hardware RTC - This is the default setting for the DS3231!!
-    #define OKNXHW_REG2_HWRTC_I2C_ADDRESS         0x68    // i2c address of the RTC. I.e. 0x68 for DS3231.
-    #define OKNXHW_REG2_HWRTC_I2C_EEPROM_ADDRESS  0x57    // Set here the i2c address of the RTC EEPROM. I.e. 0x57 for DS3231.
-    #define OKNXHW_REG2_HWRTC_I2C_EEPROM_SIZE     0x1000  // Set here the size of the RTC EEPROM. I.e. 0x1000 for DS3231.
-    #define OKNXHW_REG2_HWRTC_SRAM_RTC_USER_START 0x13    // User address start in the DS3231 SRAM. 0x13
-    #define OKNXHW_REG2_HWRTC_SRAM_RTC_USER_END   0x3F    // User address end in the DS3231 SRAM. 0x3F
-    #define OKNXHW_REG2_HWRTC_SRAM_RTC_USER       45      // (SRAM_RTC_USER_END - SRAM_RTC_USER_START + 1) // User address count in the DS3231 SRAM.
+    #define OKNXHW_REG2_HWRTC_I2C_ADDRESS 0x68         // i2c address of the RTC. I.e. 0x68 for DS3231.
+    #define OKNXHW_REG2_HWRTC_I2C_EEPROM_ADDRESS 0x57  // Set here the i2c address of the RTC EEPROM. I.e. 0x57 for DS3231.
+    #define OKNXHW_REG2_HWRTC_I2C_EEPROM_SIZE 0x1000   // Set here the size of the RTC EEPROM. I.e. 0x1000 for DS3231.
+    #define OKNXHW_REG2_HWRTC_SRAM_RTC_USER_START 0x13 // User address start in the DS3231 SRAM. 0x13
+    #define OKNXHW_REG2_HWRTC_SRAM_RTC_USER_END 0x3F   // User address end in the DS3231 SRAM. 0x3F
+    #define OKNXHW_REG2_HWRTC_SRAM_RTC_USER 45         // (SRAM_RTC_USER_END - SRAM_RTC_USER_START + 1) // User address count in the DS3231 SRAM.
 
     #define OKNXHW_REG2_HWRTC_I2C_INST i2c1 // i2c1 | i2c0
 
@@ -308,7 +359,12 @@
     #define OKNXHW_REG2_MSENS_1_SCL0_RX_PIN 5 // GPIO5  | SPI0 TX  | UART1 RX  | I2C0 SCL | PWM2 B
     #define OKNXHW_REG2_MSENS_2_SDA1_TX_PIN 6 // GPIO6  | SPI0 SCK | UART1 CTS | I2C1 SDA | PWM3 A
     #define OKNXHW_REG2_MSENS_2_SCL1_RX_PIN 7 // GPIO7  | SPI0 CSn | UART1 RTS | I2C1 SCL | PWM3 B
-#endif                                        // REG2-Pi-Pico (Device Display + Meter)
+
+    #define OPENKNX_BI_GPIO_PINS 8, 9, 22
+    #define OPENKNX_BI_GPIO_COUNT 3
+    #define OPENKNX_BI_ONLEVEL LOW
+
+#endif // REG2-Pi-Pico (Device Display + Meter)
 
 /**
  * Section: Hardware specific Pin Definitions
@@ -334,7 +390,7 @@
 #endif
 // REG2-Pi-Pico V1: Info3 LED
 #ifdef OKNXHW_REG2_PIPICO_V1_LED3
-    //#define INFO3_LED_PIN 21 // ToDo: Optional use of DD Front Control LEDs
+    //#define INFO3_LED_PIN 21
     //#define INFO3_LED_PIN_ACTIVE_ON HIGH
 #endif
 
@@ -352,10 +408,10 @@
     #define PROG_LED_PIN 2
     #define PROG_LED_PIN_ACTIVE_ON HIGH
     #define PROG_BUTTON_PIN 20
-    #define PROG_BUTTON_PIN_MODE INPUT_PULLUP   // Using internal pullup of the ESP32 (aprox. 45kOhm)
-    #define OPENKNX_BUTTON_DEBOUNCE 0           // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
-    #define KNX_SERIAL Serial1 // Uart0
-    #define KNX_UART_NUM 0     // Uart0 
+    #define PROG_BUTTON_PIN_MODE INPUT_PULLUP // Using internal pullup of the ESP32 (aprox. 45kOhm)
+    #define OPENKNX_BUTTON_DEBOUNCE 0         // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
+    #define KNX_SERIAL Serial1                // Uart0
+    #define KNX_UART_NUM 0                    // Uart0
     #define KNX_UART_RX_PIN 1
     #define KNX_UART_TX_PIN 0
 
