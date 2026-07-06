@@ -3,7 +3,7 @@
  * OpenKNX Hardware Definition Header File
  *
  * File: OpenKNXiao-Hardware.h
- * Hardware: OpenKNXiao RP2040 / SAMD / ESP Based Boards
+ * Hardware: OpenKNXiao ESP32 / RP2350 / RP2040 / SAMD Based Boards
  * Responsible: OpenKNX - Erkan Çolak
  *
  * Defines hardware IO pins and functionalities for OpenKNXiao RP2040 / SAMD platform.
@@ -12,9 +12,10 @@
  * firmware features.
  *
  * Configurations are categorized by hardware versions and features:
+ * - OpenKNXiao ESP32 ( Current Versions: V1 )
+ * - OpenKNXiao RP2350 ( Current Versions: V1 )
  * - OpenKNXiao RP2040 ( Current Versions: V1 )
  * - OpenKNXiao SAMD ( Current Versions: V1 )
- * - OpenKNXiao ESP32 ( Current Versions: V1 )
  * - Wi-Fi
  * - Meter support, WS2812/NeoPixel, etc.
  *
@@ -34,16 +35,7 @@
  */
 
 // Needs the new macro in common!
-#if defined(OKNXHW_OPENKNXIAO_RP2040_MINI_V1) \
-  || defined(OKNXHW_OPENKNXIAO_ESP32S3_MINI_V1) \
-  || defined(OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V1) \
-  || defined(OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V1) \
-  || defined(OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V1_METER) \
-  || defined(OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V1_METER) \
-  || defined(OKNXHW_OPENKNXIAO_RP2040_MINI_V1_METER) \
-  || defined(OKNXHW_OPENKNXIAO_ESP32S3_MINI_V1_METER) \
-  || defined(OKNXHW_OPENKNXIAO_KNEOPIX_SAMD21_V1) \
-  || defined(OKNXHW_OPENKNXIAO_SAMD21_MINI_V1)
+#if defined(OKNXHW_OPENKNXIAO_RP2040_MINI_V1) || defined(OKNXHW_OPENKNXIAO_ESP32S3_MINI_V1) || defined(OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V1) || defined(OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V1) || defined(OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V1_METER) || defined(OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V1_METER) || defined(OKNXHW_OPENKNXIAO_RP2040_MINI_V1_METER) || defined(OKNXHW_OPENKNXIAO_ESP32S3_MINI_V1_METER) || defined(OKNXHW_OPENKNXIAO_KNEOPIX_SAMD21_V1) || defined(OKNXHW_OPENKNXIAO_SAMD21_MINI_V1)
     #define PREFIX_ID "OKNXIAO-V1"      // 10 characters
     #define PREFIX_NAME "OpenKNXiao V1" // 13 characters
 #endif
@@ -70,7 +62,6 @@
     #define OKNXHW_OPENKNXIAO_ESP32S3_V1_TERMINAL
     #define OKNXHW_OPENKNXIAO_ESP32S3_V1_TERMINAL_NEOPIX
 #endif
-
 
 // OpenKNXiao Mini RP2040 V1
 // https://github.com/OpenKNX/OpenKNXiao-Mini
@@ -193,15 +184,15 @@
 
 // OpenKNXiao RP2040 CHW Pins
 #ifdef OKNXHW_OPENKNXIAO_RP2040_V1_COMMON
-    #define PROG_LED_PIN 17                      // Build-In LED RED (RED:GPIO17 | GREEN:GPIO16 | BLUE:GPIO25)
-    #define PROG_LED_PIN_ACTIVE_ON LOW           // Active on HIGH
-    #define PROG_BUTTON_PIN 26                   // GPIO26 | SPI1 SCK | UART0 CTS | I2C1 SDA | PWM5 A | ADC0
-    #define OPENKNX_BUTTON_DEBOUNCE 0            // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
-    
-    #define KNX_SERIAL Serial1                   // Serial1 for UART0
-    #define KNX_UART_NUM 0                       // Serial1 for UART0
-    #define KNX_UART_RX_PIN 1                    // GPIO1 | SPI0 CSn | UART0 RX  | I2C0 SCL | PWM0 B
-    #define KNX_UART_TX_PIN 0                    // GPIO0 | SPI0 RX  | UART0 TX  | I2C0 SDA | PWM0 A
+    #define PROG_LED_PIN 17            // Build-In LED RED (RED:GPIO17 | GREEN:GPIO16 | BLUE:GPIO25)
+    #define PROG_LED_PIN_ACTIVE_ON LOW // Active on HIGH
+    #define PROG_BUTTON_PIN 26         // GPIO26 | SPI1 SCK | UART0 CTS | I2C1 SDA | PWM5 A | ADC0
+    #define OPENKNX_BUTTON_DEBOUNCE 0  // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
+
+    #define KNX_SERIAL Serial1 // Serial1 for UART0
+    #define KNX_UART_NUM 0     // Serial1 for UART0
+    #define KNX_UART_RX_PIN 1  // GPIO1 | SPI0 CSn | UART0 RX  | I2C0 SCL | PWM0 B
+    #define KNX_UART_TX_PIN 0  // GPIO0 | SPI0 RX  | UART0 TX  | I2C0 SDA | PWM0 A
 
     // Possible pins for the OpenKNXiao RP2040 V1
     #define KNXIAO_RP2040_PIN1 27 // GPIO27 | SPI1 TX  | UART0 RX  | I2C0 SCL | PWM6 B | ADC1
@@ -237,7 +228,6 @@
     #define KNXIAO_RP2040_TERM_PIN_NEOPIN2 KNXIAO_RP2040_PIN5 // GPIO5  | SPI0 TX  | UART1 RX  | I2C0 SCL | PWM3 A
 #endif
 
-
 /**
  * Section: Common Hardware (CHW) Pin Definitions
  * OpenKNXiao ESP32-S3
@@ -245,36 +235,48 @@
 
 // OpenKNXiao ESP32S3 pins
 #ifdef OKNXHW_OPENKNXIAO_ESP32S3_V1_COMMON
-    #define PROG_LED_PIN 21                      // Build-In LED RED (RED:GPIO17 | GREEN:GPIO16 | BLUE:GPIO25)
-    #define PROG_LED_PIN_ACTIVE_ON HIGH          // Active on HIGH
-    #define PROG_BUTTON_PIN 1                    // GPIO01 
-    #define OPENKNX_BUTTON_DEBOUNCE 0           // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
-    
-    #define KNX_SERIAL Serial1                   // Serial1 for UART1
-    #define KNX_UART_NUM 0
-    #define KNX_UART_RX_PIN 44                    // GPIO44 | SPI1 RX  | UART1 RX  | I2C0 SCL | PWM0 B
-    #define KNX_UART_TX_PIN 43                    // GPIO43 | SPI1 TX  | UART1 TX  | I2C0 SDA | PWM0 A
 
     // Possible pins for the OpenKNXiao ESP32-S3 V1
-    #define KNXIAO_ESP32S3_PIN1 2 // GPIO2
-    #define KNXIAO_ESP32S3_PIN2 3 // GPIO3
-    #define KNXIAO_ESP32S3_PIN3 4 // GPIO4
-    #define KNXIAO_ESP32S3_PIN4 5 // GPIO5
-    #define KNXIAO_ESP32S3_PIN5 6 // GPIO6
-    #define KNXIAO_ESP32S3_PIN6 7 // GPIO7
-    #define KNXIAO_ESP32S3_PIN7 8 // GPIO8
-    #define KNXIAO_ESP32S3_PIN8 9 // GPIO9
+    #define KNXIAO_ESP32S3_PIN0 1  // GPIO1
+    #define KNXIAO_ESP32S3_PIN1 2  // GPIO2
+    #define KNXIAO_ESP32S3_PIN2 3  // GPIO3
+    #define KNXIAO_ESP32S3_PIN3 4  // GPIO4
+    #define KNXIAO_ESP32S3_PIN4 5  // GPIO5
+    #define KNXIAO_ESP32S3_PIN5 6  // GPIO6
+    #define KNXIAO_ESP32S3_PIN6 43 // GPIO43
+    #define KNXIAO_ESP32S3_PIN7 44 // GPIO44
+    #define KNXIAO_ESP32S3_PIN8 7  // GPIO7
+    #define KNXIAO_ESP32S3_PIN9 8  // GPIO8
+    #define KNXIAO_ESP32S3_PIN10 9 // GPIO9
+
+    #define KNXIAO_ESP32S3_GPIO_LED1 21 // GPIO21 - Build-In USER_LED Yellow
+
+    #define PROG_LED_PIN KNXIAO_ESP32S3_GPIO_LED1 // Onboard LED
+    #define PROG_LED_PIN_ACTIVE_ON HIGH           // Active on HIGH
+    #define PROG_BUTTON_PIN KNXIAO_ESP32S3_PIN0   // GPIO01
+    #define OPENKNX_BUTTON_DEBOUNCE 0             // Software Debouncer in ms. 0 will Disables software debounce. Since we use the hardware debounce.
+
+    #define KNX_SERIAL Serial1 // Serial1 for UART1
+    #define KNX_UART_NUM 0
+    #define KNX_UART_RX_PIN KNXIAO_ESP32S3_PIN7
+    #define KNX_UART_TX_PIN KNXIAO_ESP32S3_PIN6
 #endif
 
 // OpenKNXiao RP2040 V1 Terminal Connections
 #ifdef OKNXHW_OPENKNXIAO_ESP32S3_V1_TERMINAL
-    #define KNXIAO_ESP32S3_TERM_PIN1 KNXIAO_ESP32S3_PIN1 // GPIO27 | SPI1 TX  | UART0 RX  | I2C0 SCL | PWM6 B
-    #define KNXIAO_ESP32S3_TERM_PIN2 KNXIAO_ESP32S3_PIN2 // GPIO28 | SPI1 RX  | UART0 TX  | I2C1 SDA | PWM6 A
-    #define KNXIAO_ESP32S3_TERM_PIN3 KNXIAO_ESP32S3_PIN3 // GPIO29 | SPI1 SCK | UART0 CTS | I2C1 SCL | PWM7 B
+    // #define KNXIAO_TERM_PIN1 GND
+    // #define KNXIAO_TERM_PIN2 3V3
+    // #define KNXIAO_TERM_PIN3 5V
+    #define KNXIAO_TERM_PIN4 KNXIAO_ESP32S3_PIN1
+    #define KNXIAO_TERM_PIN5 KNXIAO_ESP32S3_PIN2
+    #define KNXIAO_TERM_PIN6 KNXIAO_ESP32S3_PIN3
+    #define KNXIAO_TERM_PIN7 KNXIAO_ESP32S3_PIN4
+    #define KNXIAO_TERM_PIN8 KNXIAO_ESP32S3_PIN5
+    #define KNXIAO_TERM_PIN9 KNXIAO_ESP32S3_PIN8
+    #define KNXIAO_TERM_PIN10 KNXIAO_ESP32S3_PIN9
+    #define KNXIAO_TERM_PIN11 KNXIAO_ESP32S3_PIN10
+// #define KNXIAO_TERM_PIN12 GND
 
-    #define KNXIAO_ESP32S3_TERM_PIN6 KNXIAO_ESP32S3_PIN6 // GPIO2  | SPI0 TX  | UART1 RTS | I2C1 SDA | PWM1 A
-    #define KNXIAO_ESP32S3_TERM_PIN7 KNXIAO_ESP32S3_PIN7 // GPIO4  | SPI0 RX  | UART1 TX  | I2C0 SDA | PWM2 A
-    #define KNXIAO_ESP32S3_TERM_PIN8 KNXIAO_ESP32S3_PIN8 // GPIO3  | SPI0 RX  | UART1 TX  | I2C1 SCL | PWM2 B
 #endif
 
 // OpenKNXiao ESP32-S3 V1 Terminal Mini Connections
@@ -335,15 +337,15 @@
 
 // OpenKNXiao SAMD21 CHW Pins
 #ifdef OKNXHW_OPENKNXIAO_SAMD21_V1_COMMON
-    #define PROG_LED_PIN 13                      // Build-In LED YELLOW
-    #define PROG_LED_PIN_ACTIVE_ON HIGH          // Active on HIGH
-    #define PROG_BUTTON_PIN 0                    // GPIO0 | UART0 RX | I2C1 SDA | PWM0 A
-    #define OPENKNX_BUTTON_DEBOUNCE 0            // Software Debouncer delay in ms. 0 will Disables software debounce. Since we use the hardware debounce.
-    
-    #define KNX_SERIAL Serial1                   // Serial1 for UART1
+    #define PROG_LED_PIN 13             // Build-In LED YELLOW
+    #define PROG_LED_PIN_ACTIVE_ON HIGH // Active on HIGH
+    #define PROG_BUTTON_PIN 0           // GPIO0 | UART0 RX | I2C1 SDA | PWM0 A
+    #define OPENKNX_BUTTON_DEBOUNCE 0   // Software Debouncer delay in ms. 0 will Disables software debounce. Since we use the hardware debounce.
+
+    #define KNX_SERIAL Serial1 // Serial1 for UART1
     #define KNX_UART_NUM 0
-    #define KNX_UART_RX_PIN 6                    // GPIO6 | SPI1 TX  | UART1 RX  | I2C0 SCL | PWM4 B
-    #define KNX_UART_TX_PIN 7                    // GPIO7 | SPI1 RX  | UART1 TX  | I2C0 SDA | PWM4 A
+    #define KNX_UART_RX_PIN 6 // GPIO6 | SPI1 TX  | UART1 RX  | I2C0 SCL | PWM4 B
+    #define KNX_UART_TX_PIN 7 // GPIO7 | SPI1 RX  | UART1 TX  | I2C0 SDA | PWM4 A
 
     // Possible pins for the OpenKNXiao SAMD21 V1
     #define KNXIAO_SAMD21_PIN1 1  // GPIO1  | SPI0 CSn | UART1 RTS | I2C1 SCL | PWM1 A

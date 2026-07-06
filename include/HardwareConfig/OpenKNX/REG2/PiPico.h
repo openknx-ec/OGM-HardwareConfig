@@ -37,7 +37,7 @@
   || defined(DEVICE_REG2_PIPICO2_V1_DD) \
   || defined(DEVICE_REG2_PIPICO2_V1_DD_RTC) \
   || defined(DEVICE_REG2_PIPICO2_V1_DD_METER) \
-  || defined(DEVICE_REG2_PIPICO2_V1_ET) \
+  || defined(DEVICE_REG2_PIPICO2_V1_ETH_METER) \
   || defined(DEVICE_REG2_PIPICO2_V1_ETH_DD) \
   || defined(DEVICE_REG2_PIPICO2_W_V1) \
   || defined(DEVICE_REG2_PIPICO2_W_V1_DD) \
