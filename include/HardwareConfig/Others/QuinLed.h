@@ -97,6 +97,9 @@
     #define DEVICE_HW_ID 0x2100
     #define DEVICE_ID "QuinLED-Dig2Go"
     #define DEVICE_NAME "QuinLED Dig2Go" // Flash: 4 MB, PSRAM: 0 MB
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 4 // quinled.info Dig2Go specifications: "ESP32 with 4MB of flash memory"
+    #endif
 
     #if !defined(KNX_IP_LAN) && !defined(KNX_IP_WIFI)
         #define KNX_IP_WIFI
@@ -205,6 +208,10 @@
 
 #if defined(DEVICE_QUINLED_DIG_UNO_V3_WIFI) || defined(DEVICE_QUINLED_DIG_UNO_V3_ETHERNET) || defined(DEVICE_QUINLED_DIG_UNO_V3_WIFI_AE_PLUS)
 
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 4 // minimum: QuinLED-ESP32 v2 has 4 MB, v4 has 8 MB
+    #endif
+
     #define QUINLED_LED_PORT_COUNT 2
     #define QUINLED_RELAY_COUNT 1
 
@@ -298,6 +305,10 @@
 #endif
 
 #if defined(DEVICE_QUINLED_DIG_QUAD_V3_WIFI) || defined(DEVICE_QUINLED_DIG_QUAD_V3_ETHERNET) || defined(DEVICE_QUINLED_DIG_QUAD_V3_WIFI_AE_PLUS)
+
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 4 // minimum: QuinLED-ESP32 v2 has 4 MB, v4 has 8 MB
+    #endif
 
     #if QUINLED_HAS_ETHERNET
         #define QUINLED_ETHERNET_POWER_GPIO 5   // Ethernet PHY enable

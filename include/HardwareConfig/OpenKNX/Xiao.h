@@ -341,6 +341,9 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
  * ################################################################################# */
 //
 #if defined(OKNXHW_OPENKNXIAO_RP2040)
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 2 // Seeed XIAO RP2040: 2 MB flash
+    #endif
     // XIAO RP2040 Pin Definitions
     #define OKNXHW_OPENKNXIAO_D0  26 // GPIO26 | SPI1 SCK  | UART1 CTS | I2C1 SDA | PWM5 A
     #define OKNXHW_OPENKNXIAO_D1  27 // GPIO27 | SPI1 TX   | UART1 RTS | I2C1 SCL | PWM5 B
@@ -362,6 +365,9 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
     #define OKNXHW_OPENKNXIAO_NEOPIXEL 12   // Build-In NeoPixel Pin
 
 #elif defined(OKNXHW_OPENKNXIAO_RP2350)
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 2 // Seeed XIAO RP2350: 2 MB flash
+    #endif
     // XIAO RP2350 Pin Definitions
     #define OKNXHW_OPENKNXIAO_D0  26 // GPIO26 | SPI1 SCK  | UART1 CTS | I2C1 SDA | PWM5 A
     #define OKNXHW_OPENKNXIAO_D1  27 // GPIO27 | SPI1 TX   | UART1 RTS | I2C1 SCL | PWM5 B
@@ -384,6 +390,9 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
     #define OKNXHW_OPENKNXIAO_NEOPIXEL 22    // Build-In NeoPixel Pin
 
 #elif defined(OKNXHW_OPENKNXIAO_ESP32S3) || defined(OKNXHW_OPENKNXIAO_ESP32S3_PLUS)
+    #if defined(OKNXHW_OPENKNXIAO_ESP32S3) && !defined(OKNXHW_OPENKNXIAO_ESP32S3_PLUS) && !defined(DEVICE_FLASH_SIZE_MB)
+        #define DEVICE_FLASH_SIZE_MB 8 // Seeed XIAO ESP32-S3: 8 MB flash (S3 Plus not set)
+    #endif
     // XIAO ESP32-S3 Plus Pin Definitions
     #define OKNXHW_OPENKNXIAO_D0  1 
     #define OKNXHW_OPENKNXIAO_D1  2
@@ -407,6 +416,9 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
     #define OKNXHW_OPENKNXIAO_NEOPIXEL_PWR -1 // N/A
     #define OKNXHW_OPENKNXIAO_NEOPIXEL -1   // N/A
 #elif defined(OKNXHW_OPENKNXIAO_ESP32C3)
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 4 // Seeed XIAO ESP32-C3: 4 MB flash
+    #endif
     // XIAO ESP32-C3 Pin Definitions
     #define OKNXHW_OPENKNXIAO_D0  2
     #define OKNXHW_OPENKNXIAO_D1  3
@@ -429,6 +441,9 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
     #define OKNXHW_OPENKNXIAO_NEOPIXEL_PWR -1 // N/A
     #define OKNXHW_OPENKNXIAO_NEOPIXEL -1   // N/A
 #elif defined(OKNXHW_OPENKNXIAO_ESP32C5)
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 8 // Seeed XIAO ESP32-C5: 8 MB flash
+    #endif
     // XIAO ESP32-C5 Pin Definitions
     #define OKNXHW_OPENKNXIAO_D0  1
     #define OKNXHW_OPENKNXIAO_D1  0
@@ -451,6 +466,9 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
     #define OKNXHW_OPENKNXIAO_NEOPIXEL_PWR -1 // N/A
     #define OKNXHW_OPENKNXIAO_NEOPIXEL -1   // N/A
 #elif defined(OKNXHW_OPENKNXIAO_ESP32C6)
+    #ifndef DEVICE_FLASH_SIZE_MB
+        #define DEVICE_FLASH_SIZE_MB 4 // Seeed XIAO ESP32-C6: 4 MB flash
+    #endif
     // XIAO ESP32-C6 Pin Definitions
     #define OKNXHW_OPENKNXIAO_D0  0
     #define OKNXHW_OPENKNXIAO_D1  1
