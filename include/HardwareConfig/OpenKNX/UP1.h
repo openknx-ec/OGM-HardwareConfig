@@ -245,6 +245,7 @@
     #define DEVICE_HW_ID  0x1220 // Used for demo/testing purposes only
     #define DEVICE_ID "UP1-GW-UART"
     #define DEVICE_NAME "OpenKNX UP1 UART Gateway"
+    #define HW_INFO_URL "https://go.openknx.de/up1-gw-uart" // short link to the UP1 UART Gateway wiki page
 
     #define OKNXHW_UP1_CONTROLLER2040
 

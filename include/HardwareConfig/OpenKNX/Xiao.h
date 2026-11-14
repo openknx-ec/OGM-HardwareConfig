@@ -106,9 +106,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V1
     #define DEVICE_HW_ID 0x1300
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (TXS0108E), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-2040"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix RP2040"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_RP2040
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -122,9 +124,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://...
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2350_V1
     #define DEVICE_HW_ID 0x1310
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (TXS0108E), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-2350"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix RP2350"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_RP2350
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -136,9 +140,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V1
     #define DEVICE_HW_ID 0x1320
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (TXS0108E), KNX über TP oder IP über WLAN (je nach Firmware-Variante)." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32S3"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32S3"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32S3
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -150,9 +156,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C3_V1
     #define DEVICE_HW_ID 0x1350
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (TXS0108E), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32C3"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32C3"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32C3
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -163,9 +171,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C5_V1
     #define DEVICE_HW_ID 0x1340
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (TXS0108E), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32C5"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32C5"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32C5
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -176,9 +186,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C6_V1
     #define DEVICE_HW_ID 0x1330
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (TXS0108E), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32C6"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32C6"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32C6
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -195,9 +207,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V15
     #define DEVICE_HW_ID 0x1302
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (SN74LV8T245), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-2040"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix RP2040"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_RP2040
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -211,9 +225,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2350_V15
     #define DEVICE_HW_ID 0x1312
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (SN74LV8T245), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-2350"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix RP2350"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_RP2350
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -225,9 +241,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V15
     #define DEVICE_HW_ID 0x1322
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (SN74LV8T245), KNX über TP oder IP über WLAN (je nach Firmware-Variante)." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32S3"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32S3"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32S3
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -239,9 +257,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C3_V15
     #define DEVICE_HW_ID 0x1352
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (SN74LV8T245), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32C3"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32C3"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32C3
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -252,9 +272,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C5_V15
     #define DEVICE_HW_ID 0x1342
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (SN74LV8T245), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32C5"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32C5"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32C5
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -265,9 +287,11 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C6_V15
     #define DEVICE_HW_ID 0x1332
+    #define HW_INFO_TEXT "OpenKNX-Controller für adressierbare LED-Streifen auf Basis eines XIAO-Moduls: 8 LED-Ports mit Pegelwandler (SN74LV8T245), KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32C6"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32C6"
+    #define HW_INFO_URL "https://go.openknx.de/kneopix" // short link, created on go.openknx.de
     #define OKNXHW_OPENKNXIAO_ESP32C6
     #define OKNXHW_OPENKNXIAO_V1_COMMON
     #define OKNXHW_OPENKNXIAO_V1_TERMINAL
@@ -278,6 +302,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNXiao-Mini
 #ifdef OKNXHW_OPENKNXIAO_RP2040_MINI_V1
     #define DEVICE_HW_ID 0x1301
+    #define HW_INFO_TEXT "Kompakter OpenKNX-Controller für LED-Streifen auf Basis eines XIAO-Moduls: 8 Anschlüsse (D1–D5, D8–D10) ohne Pegelwandler, KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define DEVICE_ID PREFIX_ID "V1-Mini-2040"
     #define DEVICE_NAME PREFIX_NAME "V1 Mini RP2040"
     #define OKNXHW_OPENKNXIAO_RP2040
@@ -293,6 +318,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNXiao-Mini
 #ifdef OKNXHW_OPENKNXIAO_ESP32S3_MINI_V1
     #define DEVICE_HW_ID 0x1321
+    #define HW_INFO_TEXT "Kompakter OpenKNX-Controller für LED-Streifen auf Basis eines XIAO-Moduls: 8 Anschlüsse (D1–D5, D8–D10) ohne Pegelwandler, KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define DEVICE_ID PREFIX_ID "V1-Mini-ESP32S3"
     #define DEVICE_NAME PREFIX_NAME "V1 Mini ESP32S3"
     #define OKNXHW_OPENKNXIAO_ESP32S3
@@ -306,6 +332,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNXiao-Mini
 #ifdef OKNXHW_OPENKNXIAO_ESP32C3_MINI_V1
     #define DEVICE_HW_ID 0x1351
+    #define HW_INFO_TEXT "Kompakter OpenKNX-Controller für LED-Streifen auf Basis eines XIAO-Moduls: 8 Anschlüsse (D1–D5, D8–D10) ohne Pegelwandler, KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define DEVICE_ID PREFIX_ID "V1-Mini-ESP32C3"
     #define DEVICE_NAME PREFIX_NAME "V1 Mini ESP32C3"
     #define OKNXHW_OPENKNXIAO_ESP32C3
@@ -318,6 +345,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNXiao-Mini
 #ifdef OKNXHW_OPENKNXIAO_ESP32C5_MINI_V1
     #define DEVICE_HW_ID 0x1341
+    #define HW_INFO_TEXT "Kompakter OpenKNX-Controller für LED-Streifen auf Basis eines XIAO-Moduls: 8 Anschlüsse (D1–D5, D8–D10) ohne Pegelwandler, KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define DEVICE_ID PREFIX_ID "V1-Mini-ESP32C5"
     #define DEVICE_NAME PREFIX_NAME "V1 Mini ESP32C5"
     #define OKNXHW_OPENKNXIAO_ESP32C5
@@ -330,6 +358,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNXiao-Mini
 #ifdef OKNXHW_OPENKNXIAO_ESP32C6_MINI_V1
     #define DEVICE_HW_ID 0x1331
+    #define HW_INFO_TEXT "Kompakter OpenKNX-Controller für LED-Streifen auf Basis eines XIAO-Moduls: 8 Anschlüsse (D1–D5, D8–D10) ohne Pegelwandler, KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define DEVICE_ID PREFIX_ID "V1-Mini-ESP32C6"
     #define DEVICE_NAME PREFIX_NAME "V1 Mini ESP32C6"
     #define OKNXHW_OPENKNXIAO_ESP32C6
@@ -342,6 +371,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNXiao-Mini
 #ifdef OKNXHW_OPENKNXIAO_RP2350_MINI_V1
     #define DEVICE_HW_ID 0x1311
+    #define HW_INFO_TEXT "Kompakter OpenKNX-Controller für LED-Streifen auf Basis eines XIAO-Moduls: 8 Anschlüsse (D1–D5, D8–D10) ohne Pegelwandler, KNX über TP." // board description on the ETS hardware page (max. 255 characters)
     #define DEVICE_ID PREFIX_ID "V1-Mini-2350"
     #define DEVICE_NAME PREFIX_NAME "V1 Mini RP2350"
     #define OKNXHW_OPENKNXIAO_RP2350
