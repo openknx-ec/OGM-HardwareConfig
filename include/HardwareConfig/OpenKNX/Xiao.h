@@ -644,3 +644,33 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
     #define KNXIAO_TERM_PIN7 OKNXHW_OPENKNXIAO_D9
     #define KNXIAO_TERM_PIN8 OKNXHW_OPENKNXIAO_D10
 #endif
+
+/**
+ * Section: Port description
+ * HW_PORT_COUNT, HW_PORT_<n>_GPIO and HW_PORT_<n>_LABEL name the outputs an application may offer
+ * as ports, in this order. Read by the firmware and by OGM-HardwareConfig/generator.
+ */
+#pragma region Port description
+
+// KNeoPix and Mini have the same 8 terminal ports
+#if defined(OKNXHW_OPENKNXIAO_V1_TERMINAL_NEOPIX) || defined(OKNXHW_OPENKNXIAO_V1_TERMINAL_MINI)
+    #define HW_PORT_COUNT 8
+    #define HW_PORT_1_GPIO OKNXHW_OPENKNXIAO_D1
+    #define HW_PORT_1_LABEL "D1"
+    #define HW_PORT_2_GPIO OKNXHW_OPENKNXIAO_D2
+    #define HW_PORT_2_LABEL "D2"
+    #define HW_PORT_3_GPIO OKNXHW_OPENKNXIAO_D3
+    #define HW_PORT_3_LABEL "D3"
+    #define HW_PORT_4_GPIO OKNXHW_OPENKNXIAO_D4
+    #define HW_PORT_4_LABEL "D4"
+    #define HW_PORT_5_GPIO OKNXHW_OPENKNXIAO_D5
+    #define HW_PORT_5_LABEL "D5"
+    #define HW_PORT_6_GPIO OKNXHW_OPENKNXIAO_D8
+    #define HW_PORT_6_LABEL "D8"
+    #define HW_PORT_7_GPIO OKNXHW_OPENKNXIAO_D9
+    #define HW_PORT_7_LABEL "D9"
+    #define HW_PORT_8_GPIO OKNXHW_OPENKNXIAO_D10
+    #define HW_PORT_8_LABEL "D10"
+#endif
+
+#pragma endregion

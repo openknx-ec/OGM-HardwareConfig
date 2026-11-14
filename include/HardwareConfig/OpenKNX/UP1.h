@@ -369,3 +369,20 @@
 #endif
 
 #pragma endregion
+
+/**
+ * Section: Port description
+ * HW_PORT_COUNT, HW_PORT_<n>_GPIO and HW_PORT_<n>_LABEL name the outputs an application may offer
+ * as ports, in this order. Read by the firmware and by OGM-HardwareConfig/generator.
+ */
+#pragma region Port description
+
+#if defined(DEVICE_UP1_GW_UART)
+    #define HW_PORT_COUNT 2
+    #define HW_PORT_1_GPIO UART1_TX_PIN
+    #define HW_PORT_1_LABEL "Tx"
+    #define HW_PORT_2_GPIO UART2_TX_PIN
+    #define HW_PORT_2_LABEL "Out"
+#endif
+
+#pragma endregion
