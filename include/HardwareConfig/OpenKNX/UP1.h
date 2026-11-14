@@ -19,6 +19,7 @@
 // SEN-UP1-8xTH
 // https://github.com/OpenKNX/OpenKNX/wiki/UP1-SEN-8xTH
 #ifdef DEVICE_SEN_UP1_8XTH
+    #define DEVICE_HW_ID 0x1200
     #define DEVICE_ID "SEN-UP1-8xTH"
     #define DEVICE_NAME "OpenKNX UP1 8xSensor"
 
@@ -44,6 +45,7 @@
 
 // UP1-SEN-8x
 #ifdef DEVICE_UP1_SEN_8X
+    #define DEVICE_HW_ID 0x1201
     #define DEVICE_ID "UP1-SEN-8x"
     #define DEVICE_NAME "OpenKNX UP1 8xSensor"
 
@@ -71,6 +73,7 @@
 // https://github.com/OpenKNX/OpenKNX/wiki/UP1-PM-HF
 // note: valid for UP1-PM-HF >= V00.10
 #ifdef DEVICE_UP1_PM_HF
+    #define DEVICE_HW_ID 0x1202
     #define DEVICE_ID "UP1-PM-HF"
     #define DEVICE_NAME "OpenKNX UP1 Präsenzmelder+"
 
@@ -120,6 +123,7 @@
 #endif
 
 #ifdef DEVICE_UP1_TAS_4X
+    #define DEVICE_HW_ID 0x1203
     #define DEVICE_ID "UP1-TAS-4x"
     #define DEVICE_NAME "OpenKNX UP1 Taster"
 
@@ -198,6 +202,7 @@
 
 // device.openknx.de/UP1-GW-RS485
 #ifdef DEVICE_UP1_GW_RS485
+    #define DEVICE_HW_ID 0x1221
     #define DEVICE_ID "UP1-GW-RS485"
     #define DEVICE_NAME "OpenKNX UP1 RS485 Gateway"
 
@@ -219,6 +224,7 @@
 
 // device.openknx.de/UP1-GW-2xUART
 #ifdef DEVICE_UP1_GW_2XUART
+    #define DEVICE_HW_ID 0x1222
     #define DEVICE_ID "UP1-GW-2xUART"
     #define DEVICE_NAME "OpenKNX UP1 UART Gateway"
 
@@ -256,6 +262,7 @@
 // device.openknx.de/UP1-WLAN-2xUART
 // XIAO ESP32-S3
 #ifdef DEVICE_UP1_WLAN_2XUART
+    #define DEVICE_HW_ID 0x1223
     #define DEVICE_ID "UP1-WLAN-2xUART"
     #define DEVICE_NAME "OpenKNX UP1 WLAN UART Gateway"
 
@@ -296,6 +303,7 @@
 #endif
 
 #ifdef DEVICE_UP1_GW_IR
+    #define DEVICE_HW_ID 0x1224
     #define DEVICE_ID "UP1-GW-IR"
     #define DEVICE_NAME "OpenKNX UP1 Infrared Gateway"
 
