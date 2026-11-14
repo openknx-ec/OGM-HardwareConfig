@@ -30,6 +30,7 @@ Header an (`<IncludePath>include</IncludePath>`). Sie haben keine Firmware.
 | 4 Sensoren | Sensoren je Raumcontroller-Stufe, Steckmodul | `%HWP_CAP_*%`, `switch="true"` |
 | 5 Netzwerk | LAN, WLAN (auch vor der Auswahl), kein TP | `Common.caps.xml`, `_OR_NONE`, `NOCAP` |
 | 6 Firmware | Geräteabfrage und Auswahlprüfung in der Firmware | `answerQuery()`, `checkSelection()` |
+| 7 GPIO-Konflikte | zwei Ausgänge mit Port je Board, „Manuell“, SPI (MOSI + Takt), freie Anschlüsse, feste Relais der Shellys: gleicher GPIO = Fehlermeldung | `<Conflicts>`, `portManualValue`/`portNoneValue`, `src/hw/Outputs.xml` |
 | Entwickleransicht | technische Daten je Board | `<Page dev>` |
 
 „Nicht gewählt“ zeigt alles (`unselected="showAll"`).

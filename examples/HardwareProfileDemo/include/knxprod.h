@@ -17,9 +17,9 @@
 #define MAIN_FirmwareName "OpenKNX Hardware-Profil Demo"
 #define MAIN_OpenKnxId 0xAD
 #define MAIN_ApplicationNumber 240
-#define MAIN_ApplicationVersion 3
+#define MAIN_ApplicationVersion 4
 #define MAIN_ApplicationEncoding iso-8859-15
-#define MAIN_ParameterSize 176
+#define MAIN_ParameterSize 189
 #define MAIN_MaxKoNumber 106
 #define MAIN_OrderNumber "HWProfileDemo"
 #define BASE_ModuleVersion 32
@@ -331,6 +331,79 @@
 #define DEMO_ChannelsR0                          162      // 8 Bits, Bit 7-0
 #define DEMO_ChannelsR1                          162      // 8 Bits, Bit 7-0
 #define DEMO_ChannelsR2                          162      // 8 Bits, Bit 7-0
+#define DEMO_Outputs                             176      // 8 Bits, Bit 7-0
+#define DEMO_Out1Signal                          177      // 8 Bits, Bit 7-0
+#define DEMO_Out2Signal                          178      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB3                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB4                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB2                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB5                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB0                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB1                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB7                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB6                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB8                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB9                          179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB10                         179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB11                         179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB12                         179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB13                         179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB14                         179      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataB15                         179      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB3                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB4                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB2                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB5                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB0                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB1                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB7                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB6                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB8                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB9                         180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB10                        180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB11                        180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB12                        180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB13                        180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB14                        180      // 8 Bits, Bit 7-0
+#define DEMO_Out1ClockB15                        180      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB3                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB4                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB2                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB5                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB0                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB1                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB7                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB6                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB8                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB9                          181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB10                         181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB11                         181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB12                         181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB13                         181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB14                         181      // 8 Bits, Bit 7-0
+#define DEMO_Out2DataB15                         181      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB3                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB4                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB2                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB5                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB0                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB1                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB7                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB6                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB8                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB9                         182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB10                        182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB11                        182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB12                        182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB13                        182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB14                        182      // 8 Bits, Bit 7-0
+#define DEMO_Out2ClockB15                        182      // 8 Bits, Bit 7-0
+#define DEMO_Out1DataGpio                        183      // uint8_t
+#define DEMO_Out1MosiGpio                        184      // uint8_t
+#define DEMO_Out1ClockGpio                       185      // uint8_t
+#define DEMO_Out2DataGpio                        186      // uint8_t
+#define DEMO_Out2MosiGpio                        187      // uint8_t
+#define DEMO_Out2ClockGpio                       188      // uint8_t
 
 // IP-Adresse per DHCP
 #define ParamDEMO_LanDhcp                             (knx.paramByte(DEMO_LanDhcp))
@@ -403,6 +476,152 @@
 #define ParamDEMO_ChannelsR1                          (knx.paramByte(DEMO_ChannelsR1))
 // Schaltkanäle
 #define ParamDEMO_ChannelsR2                          (knx.paramByte(DEMO_ChannelsR2))
+// Genutzte Ausgänge
+#define ParamDEMO_Outputs                             (knx.paramByte(DEMO_Outputs))
+// Signal
+#define ParamDEMO_Out1Signal                          (knx.paramByte(DEMO_Out1Signal))
+// Signal
+#define ParamDEMO_Out2Signal                          (knx.paramByte(DEMO_Out2Signal))
+// Daten-Port
+#define ParamDEMO_Out1DataB3                          (knx.paramByte(DEMO_Out1DataB3))
+// Daten-Port
+#define ParamDEMO_Out1DataB4                          (knx.paramByte(DEMO_Out1DataB4))
+// Daten-Port
+#define ParamDEMO_Out1DataB2                          (knx.paramByte(DEMO_Out1DataB2))
+// Daten-Port
+#define ParamDEMO_Out1DataB5                          (knx.paramByte(DEMO_Out1DataB5))
+// Daten-Port
+#define ParamDEMO_Out1DataB0                          (knx.paramByte(DEMO_Out1DataB0))
+// Daten-Port
+#define ParamDEMO_Out1DataB1                          (knx.paramByte(DEMO_Out1DataB1))
+// Daten-Port
+#define ParamDEMO_Out1DataB7                          (knx.paramByte(DEMO_Out1DataB7))
+// Daten-Port
+#define ParamDEMO_Out1DataB6                          (knx.paramByte(DEMO_Out1DataB6))
+// Daten-Port
+#define ParamDEMO_Out1DataB8                          (knx.paramByte(DEMO_Out1DataB8))
+// Daten-Port
+#define ParamDEMO_Out1DataB9                          (knx.paramByte(DEMO_Out1DataB9))
+// Daten-Port
+#define ParamDEMO_Out1DataB10                         (knx.paramByte(DEMO_Out1DataB10))
+// Daten-Port
+#define ParamDEMO_Out1DataB11                         (knx.paramByte(DEMO_Out1DataB11))
+// Daten-Port
+#define ParamDEMO_Out1DataB12                         (knx.paramByte(DEMO_Out1DataB12))
+// Daten-Port
+#define ParamDEMO_Out1DataB13                         (knx.paramByte(DEMO_Out1DataB13))
+// Daten-Port
+#define ParamDEMO_Out1DataB14                         (knx.paramByte(DEMO_Out1DataB14))
+// Daten-Port
+#define ParamDEMO_Out1DataB15                         (knx.paramByte(DEMO_Out1DataB15))
+// Takt-Port
+#define ParamDEMO_Out1ClockB3                         (knx.paramByte(DEMO_Out1ClockB3))
+// Takt-Port
+#define ParamDEMO_Out1ClockB4                         (knx.paramByte(DEMO_Out1ClockB4))
+// Takt-Port
+#define ParamDEMO_Out1ClockB2                         (knx.paramByte(DEMO_Out1ClockB2))
+// Takt-Port
+#define ParamDEMO_Out1ClockB5                         (knx.paramByte(DEMO_Out1ClockB5))
+// Takt-Port
+#define ParamDEMO_Out1ClockB0                         (knx.paramByte(DEMO_Out1ClockB0))
+// Takt-Port
+#define ParamDEMO_Out1ClockB1                         (knx.paramByte(DEMO_Out1ClockB1))
+// Takt-Port
+#define ParamDEMO_Out1ClockB7                         (knx.paramByte(DEMO_Out1ClockB7))
+// Takt-Port
+#define ParamDEMO_Out1ClockB6                         (knx.paramByte(DEMO_Out1ClockB6))
+// Takt-Port
+#define ParamDEMO_Out1ClockB8                         (knx.paramByte(DEMO_Out1ClockB8))
+// Takt-Port
+#define ParamDEMO_Out1ClockB9                         (knx.paramByte(DEMO_Out1ClockB9))
+// Takt-Port
+#define ParamDEMO_Out1ClockB10                        (knx.paramByte(DEMO_Out1ClockB10))
+// Takt-Port
+#define ParamDEMO_Out1ClockB11                        (knx.paramByte(DEMO_Out1ClockB11))
+// Takt-Port
+#define ParamDEMO_Out1ClockB12                        (knx.paramByte(DEMO_Out1ClockB12))
+// Takt-Port
+#define ParamDEMO_Out1ClockB13                        (knx.paramByte(DEMO_Out1ClockB13))
+// Takt-Port
+#define ParamDEMO_Out1ClockB14                        (knx.paramByte(DEMO_Out1ClockB14))
+// Takt-Port
+#define ParamDEMO_Out1ClockB15                        (knx.paramByte(DEMO_Out1ClockB15))
+// Daten-Port
+#define ParamDEMO_Out2DataB3                          (knx.paramByte(DEMO_Out2DataB3))
+// Daten-Port
+#define ParamDEMO_Out2DataB4                          (knx.paramByte(DEMO_Out2DataB4))
+// Daten-Port
+#define ParamDEMO_Out2DataB2                          (knx.paramByte(DEMO_Out2DataB2))
+// Daten-Port
+#define ParamDEMO_Out2DataB5                          (knx.paramByte(DEMO_Out2DataB5))
+// Daten-Port
+#define ParamDEMO_Out2DataB0                          (knx.paramByte(DEMO_Out2DataB0))
+// Daten-Port
+#define ParamDEMO_Out2DataB1                          (knx.paramByte(DEMO_Out2DataB1))
+// Daten-Port
+#define ParamDEMO_Out2DataB7                          (knx.paramByte(DEMO_Out2DataB7))
+// Daten-Port
+#define ParamDEMO_Out2DataB6                          (knx.paramByte(DEMO_Out2DataB6))
+// Daten-Port
+#define ParamDEMO_Out2DataB8                          (knx.paramByte(DEMO_Out2DataB8))
+// Daten-Port
+#define ParamDEMO_Out2DataB9                          (knx.paramByte(DEMO_Out2DataB9))
+// Daten-Port
+#define ParamDEMO_Out2DataB10                         (knx.paramByte(DEMO_Out2DataB10))
+// Daten-Port
+#define ParamDEMO_Out2DataB11                         (knx.paramByte(DEMO_Out2DataB11))
+// Daten-Port
+#define ParamDEMO_Out2DataB12                         (knx.paramByte(DEMO_Out2DataB12))
+// Daten-Port
+#define ParamDEMO_Out2DataB13                         (knx.paramByte(DEMO_Out2DataB13))
+// Daten-Port
+#define ParamDEMO_Out2DataB14                         (knx.paramByte(DEMO_Out2DataB14))
+// Daten-Port
+#define ParamDEMO_Out2DataB15                         (knx.paramByte(DEMO_Out2DataB15))
+// Takt-Port
+#define ParamDEMO_Out2ClockB3                         (knx.paramByte(DEMO_Out2ClockB3))
+// Takt-Port
+#define ParamDEMO_Out2ClockB4                         (knx.paramByte(DEMO_Out2ClockB4))
+// Takt-Port
+#define ParamDEMO_Out2ClockB2                         (knx.paramByte(DEMO_Out2ClockB2))
+// Takt-Port
+#define ParamDEMO_Out2ClockB5                         (knx.paramByte(DEMO_Out2ClockB5))
+// Takt-Port
+#define ParamDEMO_Out2ClockB0                         (knx.paramByte(DEMO_Out2ClockB0))
+// Takt-Port
+#define ParamDEMO_Out2ClockB1                         (knx.paramByte(DEMO_Out2ClockB1))
+// Takt-Port
+#define ParamDEMO_Out2ClockB7                         (knx.paramByte(DEMO_Out2ClockB7))
+// Takt-Port
+#define ParamDEMO_Out2ClockB6                         (knx.paramByte(DEMO_Out2ClockB6))
+// Takt-Port
+#define ParamDEMO_Out2ClockB8                         (knx.paramByte(DEMO_Out2ClockB8))
+// Takt-Port
+#define ParamDEMO_Out2ClockB9                         (knx.paramByte(DEMO_Out2ClockB9))
+// Takt-Port
+#define ParamDEMO_Out2ClockB10                        (knx.paramByte(DEMO_Out2ClockB10))
+// Takt-Port
+#define ParamDEMO_Out2ClockB11                        (knx.paramByte(DEMO_Out2ClockB11))
+// Takt-Port
+#define ParamDEMO_Out2ClockB12                        (knx.paramByte(DEMO_Out2ClockB12))
+// Takt-Port
+#define ParamDEMO_Out2ClockB13                        (knx.paramByte(DEMO_Out2ClockB13))
+// Takt-Port
+#define ParamDEMO_Out2ClockB14                        (knx.paramByte(DEMO_Out2ClockB14))
+// Takt-Port
+#define ParamDEMO_Out2ClockB15                        (knx.paramByte(DEMO_Out2ClockB15))
+// Daten-GPIO
+#define ParamDEMO_Out1DataGpio                        (knx.paramByte(DEMO_Out1DataGpio))
+// MOSI-GPIO
+#define ParamDEMO_Out1MosiGpio                        (knx.paramByte(DEMO_Out1MosiGpio))
+// Takt-GPIO
+#define ParamDEMO_Out1ClockGpio                       (knx.paramByte(DEMO_Out1ClockGpio))
+// Daten-GPIO
+#define ParamDEMO_Out2DataGpio                        (knx.paramByte(DEMO_Out2DataGpio))
+// MOSI-GPIO
+#define ParamDEMO_Out2MosiGpio                        (knx.paramByte(DEMO_Out2MosiGpio))
+// Takt-GPIO
+#define ParamDEMO_Out2ClockGpio                       (knx.paramByte(DEMO_Out2ClockGpio))
 
 #define DEMO_KoPower 101
 #define DEMO_KoDeviceTemp 102

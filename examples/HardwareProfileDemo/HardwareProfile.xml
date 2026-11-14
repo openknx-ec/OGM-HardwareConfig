@@ -6,8 +6,10 @@
   What a developer writes: this file. Everything else (ETS selection, capability tokens, device
   query, firmware header) is generated from it and from the board headers in OGM-HardwareConfig.
 -->
-<!-- unselected="showAll": "Nicht gewählt" shows everything (instead of a test device in the list) -->
-<HardwareProfile prefix="HWP" moduleType="45" text="Hardware" unselected="showAll" order="hwid">
+<!-- unselected="showAll": "Nicht gewählt" shows everything (instead of a test device in the list);
+     portManualValue / portNoneValue: port values of the port selections (0..n-1 = port n, 10 = manual GPIO, 15 = no port),
+     read by the GPIO conflict check (<Conflicts>) and the firmware header (HardwareProfile::signalGpio) -->
+<HardwareProfile prefix="HWP" moduleType="45" text="Hardware" unselected="showAll" order="hwid" portManualValue="10" portNoneValue="15">
 
   <!-- demo boards next to the real ones: include/HardwareConfig.h adds include/DemoBoards.h -->
   <IncludePath>include</IncludePath>
@@ -79,4 +81,38 @@
     <Pins board="DEVICE_QUINLED_*"    scan="^QUINLED_(Q\d|EXTRA\d)_GPIO$" label="$1" />
     <Pins board="DEVICE_REG1_*"       scan="^REG1_APP_PIN(\d+)$" label="APP-Pin $1" />
   </GpioRole>
+
+  <!-- port selections per board of the demo module (src/hw/Outputs.xml, values: port number - 1, 10 = manual, 15 = none) -->
+  <Generate template="src/hw/Outputs.xml" output="src/HardwareProfile.outputs.gen.xml" />
+
+  <!-- GPIO conflict check (page "7 GPIO-Konflikte"): every active use resolves to a GPIO of the selected board, two uses with
+       the same GPIO both show their error block. The parts go into the demo module (ModuleType 46, %TT%): flags 900..907
+       without memory, one calculation. port = ParamRefId per board ($b = board, $tt = ModuleType 45 of the hardware module).
+       value="port": port value (portManualValue / portNoneValue of the root); value="gpio": the value is the GPIO -->
+  <Conflicts output="src/HardwareProfile.conflicts.gen.xml" number="900">
+    <Param name="Outputs" ref="%AID%_P-%TT%00023_R-%TT%0002301" />
+    <Param name="Signal1" ref="%AID%_P-%TT%00024_R-%TT%0002401" />
+    <Param name="Signal2" ref="%AID%_P-%TT%00025_R-%TT%0002501" />
+    <!-- free pins of the hardware page: the value is the GPIO (255 = not used) -->
+    <Use name="Pin1" text="Freier Anschluss 1" value="gpio" port="%AID%_UP-{{$tt}}{{D5 (11000 + $b.Slot)}}_R-{{$tt}}{{D5 (11000 + $b.Slot)}}01" />
+    <Use name="Pin2" text="Freier Anschluss 2" value="gpio" port="%AID%_UP-{{$tt}}{{D5 (12000 + $b.Slot)}}_R-{{$tt}}{{D5 (12000 + $b.Slot)}}01" />
+    <!-- outputs: active up to "Genutzte Ausgänge"; SPI signals (1, 2) take the MOSI GPIO when manual and use the clock -->
+    <Use name="Out1Data" text="Ausgang 1 Daten" when="Outputs >= 1" port="%AID%_UP-%TT%{{D5 (1000 + $b.Slot)}}_R-%TT%{{D5 (1000 + $b.Slot)}}01">
+      <Manual when="Signal1 in 1 2" ref="%AID%_P-%TT%00027_R-%TT%0002701" />
+      <Manual ref="%AID%_P-%TT%00026_R-%TT%0002601" />
+    </Use>
+    <Use name="Out1Clock" text="Ausgang 1 Takt" when="Outputs >= 1 and Signal1 in 1 2" port="%AID%_UP-%TT%{{D5 (1100 + $b.Slot)}}_R-%TT%{{D5 (1100 + $b.Slot)}}01">
+      <Manual ref="%AID%_P-%TT%00028_R-%TT%0002801" />
+    </Use>
+    <Use name="Out2Data" text="Ausgang 2 Daten" when="Outputs >= 2" port="%AID%_UP-%TT%{{D5 (1200 + $b.Slot)}}_R-%TT%{{D5 (1200 + $b.Slot)}}01">
+      <Manual when="Signal2 in 1 2" ref="%AID%_P-%TT%00030_R-%TT%0003001" />
+      <Manual ref="%AID%_P-%TT%00029_R-%TT%0002901" />
+    </Use>
+    <Use name="Out2Clock" text="Ausgang 2 Takt" when="Outputs >= 2 and Signal2 in 1 2" port="%AID%_UP-%TT%{{D5 (1300 + $b.Slot)}}_R-%TT%{{D5 (1300 + $b.Slot)}}01">
+      <Manual ref="%AID%_P-%TT%00031_R-%TT%0003101" />
+    </Use>
+    <!-- hard-wired relays (HW_RELAY_<n>_GPIO): the pin is always occupied on boards with that relay -->
+    <Use name="Relay1" text="Relais 1" wiredRelay="1" />
+    <Use name="Relay2" text="Relais 2" wiredRelay="2" />
+  </Conflicts>
 </HardwareProfile>

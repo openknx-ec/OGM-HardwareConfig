@@ -257,3 +257,42 @@ constexpr bool ROLE_Pin_ON_OWN_BOARD = contains(ROLE_Pin_HW_IDS, 5, OWN_HW_ID);
 } // namespace HardwareProfile
 #define HWP_ROLE_Pin_1 ParamHWP_Pin1B3
 #define HWP_ROLE_Pin_2 ParamHWP_Pin2B3
+
+// Port selections (HardwareProfile.xml portManualValue / portNoneValue, the same values as the ETS conflict check):
+// 0..n-1 = port n of the board (hwPortGpio), PORT_MANUAL = the manual GPIO parameter, PORT_NONE and every value that
+// is no port of the board = no GPIO; PORT_MANUAL and PORT_NONE are tested first, a described port on one of them is
+// never used (the generator stops when ETS offers such a port). Pass ParamHWP_HardwareSelect as 'selected': another
+// or no board gives GPIO_NONE
+// (ETS writes the port bytes for the selected board only; an unwritten byte reads 0 = port 1).
+#include "HardwareConfig/Helpers/HardwarePorts.h"
+namespace HardwareProfile
+{
+constexpr uint8_t PORT_MANUAL = 10;
+constexpr uint8_t PORT_NONE = 15;
+constexpr uint8_t GPIO_NONE = 255;
+
+/// @brief true when the ETS hardware selection is this board (never while nothing is selected)
+constexpr bool selectionIsOwn(uint16_t selected)
+{
+    return selected != NOT_SELECTED && selected == OWN_HW_ID;
+}
+
+/// @brief GPIO of a signal from its port selection: PORT_MANUAL -> manualGpio, a port of the board -> hwPortGpio(), else GPIO_NONE
+/// @param selected ETS hardware selection (ParamHWP_HardwareSelect); not this board -> GPIO_NONE
+constexpr uint8_t signalGpio(uint16_t selected, uint8_t portValue, uint8_t manualGpio)
+{
+    return !selectionIsOwn(selected) ? GPIO_NONE
+         : portValue == PORT_MANUAL ? manualGpio
+         : portValue == PORT_NONE ? GPIO_NONE
+         : hwPortGpio(portValue);
+}
+
+/// @brief GPIO of relay relayIndex (0-based): a hard-wired relay (relayIndex < hwRelayCount()) -> hwRelayGpio(), its port byte
+///        is ignored; every further relay -> signalGpio(). Not this board -> GPIO_NONE, also for a hard-wired relay.
+constexpr uint8_t relaySignalGpio(uint16_t selected, uint8_t relayIndex, uint8_t portValue, uint8_t manualGpio)
+{
+    return !selectionIsOwn(selected) ? GPIO_NONE
+         : relayIndex < hwRelayCount() ? hwRelayGpio(relayIndex)
+         : signalGpio(selected, portValue, manualGpio);
+}
+} // namespace HardwareProfile

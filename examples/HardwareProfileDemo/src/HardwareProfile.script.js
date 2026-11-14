@@ -111,3 +111,125 @@ function HWP_detectHardware(device, online, progress, context) {
     else
         progress.setText("Hardware: " + known.name + " (" + HWP_hex4(hwId) + ") erkannt." + off);
 }
+
+// GPIO conflict check (<Conflicts>): HWP_conflictCheck is the LR function of one ParameterCalculation. Every active
+// use resolves to a GPIO of the selected board; two uses with the same GPIO both get their flag. No board: all 0.
+// n: name; w: condition (OR of AND terms [input, op, values]), null = always; g: 1 = value is the GPIO, 0 = port index;
+// m / x: value for manual / none (-1: none); man: [condition, input of the manual GPIO], first match wins;
+// r: hard-wired relay number (pin always occupied on boards with that relay); p: 0 no port parameter, 1 one per board
+// (input U<i>B<board number>), 2 one for all boards (input U<i>)
+var HWP_conflictUses = [
+    { n: "Pin1", w: null, g: 1, m: -1, x: -1, man: [], r: 0, p: 1 },
+    { n: "Pin2", w: null, g: 1, m: -1, x: -1, man: [], r: 0, p: 1 },
+    { n: "Out1Data", w: [[["P_Outputs", "ge", [1]]]], g: 0, m: 10, x: 15, man: [[[[["P_Signal1", "in", [1, 2]]]], "M2_0"], [null, "M2_1"]], r: 0, p: 1 },
+    { n: "Out1Clock", w: [[["P_Outputs", "ge", [1]], ["P_Signal1", "in", [1, 2]]]], g: 0, m: 10, x: 15, man: [[null, "M3_0"]], r: 0, p: 1 },
+    { n: "Out2Data", w: [[["P_Outputs", "ge", [2]]]], g: 0, m: 10, x: 15, man: [[[[["P_Signal2", "in", [1, 2]]]], "M4_0"], [null, "M4_1"]], r: 0, p: 1 },
+    { n: "Out2Clock", w: [[["P_Outputs", "ge", [2]], ["P_Signal2", "in", [1, 2]]]], g: 0, m: 10, x: 15, man: [[null, "M5_0"]], r: 0, p: 1 },
+    { n: "Relay1", w: null, g: 0, m: 10, x: 15, man: [], r: 1, p: 0 },
+    { n: "Relay2", w: null, g: 0, m: 10, x: 15, man: [], r: 2, p: 0 }
+];
+// DEVICE_HW_ID -> s: board number, ports: GPIO per port value (null: port not offered), relays: GPIO of the hard-wired relays
+var HWP_conflictBoards = {
+    4129: { s: 3, ports: [], relays: [] },
+    4130: { s: 4, ports: [], relays: [] },
+    4402: { s: 2, ports: [], relays: [] },
+    4611: { s: 5, ports: [], relays: [] },
+    4880: { s: 0, ports: [27, 28, 5, 6, 7, 2, 4, 3], relays: [] },
+    4896: { s: 1, ports: [2, 3, 4, 5, 6, 7, 8, 9], relays: [] },
+    8481: { s: 7, ports: [16, 3, 1, 4, 15], relays: [] },
+    9216: { s: 6, ports: [], relays: [] },
+    16128: { s: 8, ports: [], relays: [] },
+    16129: { s: 9, ports: [], relays: [] },
+    16130: { s: 10, ports: [], relays: [] },
+    16144: { s: 11, ports: [], relays: [26] },
+    16145: { s: 12, ports: [], relays: [26] },
+    16146: { s: 13, ports: [], relays: [12, 13] },
+    16147: { s: 14, ports: [], relays: [] },
+    16148: { s: 15, ports: [], relays: [4] }
+};
+
+function HWP_conflictInt(value, fallback) {
+    if (typeof value == "number") return value;
+    var n = parseInt(value, 10);
+    return isNaN(n) ? fallback : n;
+}
+
+// condition of a use or a manual GPIO: OR over groups, AND within a group
+function HWP_conflictWhen(input, when) {
+    if (!when) return true;
+    for (var g = 0; g < when.length; g++) {
+        var ok = true;
+        for (var t = 0; t < when[g].length && ok; t++) {
+            var v = HWP_conflictInt(input[when[g][t][0]], 0);
+            var op = when[g][t][1];
+            var vals = when[g][t][2];
+            if (op == "in") {
+                ok = false;
+                for (var k = 0; k < vals.length; k++) if (v == vals[k]) ok = true;
+            }
+            else if (op == "eq") ok = (v == vals[0]);
+            else if (op == "ne") ok = (v != vals[0]);
+            else if (op == "lt") ok = (v < vals[0]);
+            else if (op == "le") ok = (v <= vals[0]);
+            else if (op == "gt") ok = (v > vals[0]);
+            else ok = (v >= vals[0]);
+        }
+        if (ok) return true;
+    }
+    return false;
+}
+
+// GPIO of use u (index i) on the board, -1 when it takes no GPIO
+function HWP_conflictGpio(input, u, i, board) {
+    if (u.r > 0 && u.r <= board.relays.length) return board.relays[u.r - 1];
+    if (u.p == 0 || !HWP_conflictWhen(input, u.w)) return -1;
+    var v = HWP_conflictInt(input[u.p == 2 ? "U" + i : "U" + i + "B" + board.s], -1);
+    if (u.m >= 0 && v == u.m) {
+        for (var k = 0; k < u.man.length; k++) {
+            if (!HWP_conflictWhen(input, u.man[k][0])) continue;
+            var gpio = HWP_conflictInt(input[u.man[k][1]], -1);
+            return (gpio >= 0 && gpio < 255) ? gpio : -1;
+        }
+        return -1;
+    }
+    if (u.x >= 0 && v == u.x) return -1;
+    if (u.g) return (v >= 0 && v < 255) ? v : -1;
+    if (v >= 0 && v < board.ports.length && board.ports[v] !== null) return board.ports[v];
+    return -1;
+}
+
+// conflict flag per use (0/1), all 0 while no or an unknown board is selected
+function HWP_conflictFlags(input) {
+    var uses = HWP_conflictUses;
+    var flags = [];
+    var gpio = [];
+    var i;
+    for (i = 0; i < uses.length; i++) { flags.push(0); gpio.push(-1); }
+    var board = HWP_conflictBoards[HWP_conflictInt(input.Sel, -1)];
+    if (!board) return flags;
+    for (i = 0; i < uses.length; i++) gpio[i] = HWP_conflictGpio(input, uses[i], i, board);
+    for (i = 0; i < uses.length; i++) {
+        if (gpio[i] < 0) continue;
+        for (var j = i + 1; j < uses.length; j++) {
+            if (gpio[j] == gpio[i]) { flags[i] = 1; flags[j] = 1; }
+        }
+    }
+    return flags;
+}
+
+// LR function of the conflict calculation; the flags are written with dot names (the output aliases)
+function HWP_conflictCheck(input, output, context) {
+    var f = HWP_conflictFlags(input);
+    output.F_Pin1 = f[0];
+    output.F_Pin2 = f[1];
+    output.F_Out1Data = f[2];
+    output.F_Out1Clock = f[3];
+    output.F_Out2Data = f[4];
+    output.F_Out2Clock = f[5];
+    output.F_Relay1 = f[6];
+    output.F_Relay2 = f[7];
+}
+
+// RL function of the conflict calculation: the flags are outputs only
+function HWP_conflictNone(input, output, context) {
+}

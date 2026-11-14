@@ -5,6 +5,7 @@
   <!-- a module uses only the feature flags it needs; the rest is expected to stay unused -->
   <op:nowarn id="1" regex="%HWP_" />
   <op:nowarn id="3" regex="HWP_hex4" />
+  <op:nowarn id="3" regex="HWP_conflict(Int|When|Gpio|Flags)" />
   <!-- GPIO roles: the per-board parameters of one slot share one byte on purpose (ETS union) -->
   <op:nowarn id="10" regex="HWP_.*B\d+" />
   <op:config name="%HWP_SelectRef%" value="%AID%_UP-4500001_R-450000101" />
