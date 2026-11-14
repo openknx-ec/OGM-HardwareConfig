@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Hardware profile manifest of OAM-HardwareProfileDemo.
+  Read by lib/OGM-HardwareConfig/generator/Build-HardwareProfile.ps1.
+
+  What a developer writes: this file. Everything else (ETS selection, capability tokens, device
+  query, firmware header) is generated from it and from the board headers in OGM-HardwareConfig.
+-->
+<!-- unselected="showAll": "Nicht gewählt" shows everything (instead of a test device in the list) -->
+<HardwareProfile prefix="HWP" moduleType="45" text="Hardware" unselected="showAll" order="hwid">
+
+  <!-- demo boards next to the real ones: include/HardwareConfig.h adds include/DemoBoards.h -->
+  <IncludePath>include</IncludePath>
+
+  <!-- generated files -->
+  <Output conf="src/HardwareProfile.conf.xml"
+          share="src/HardwareProfile.share.xml"
+          script="src/HardwareProfile.script.js"
+          header="include/HardwareProfileData.h" />
+  <!-- selection 0..n per hardware (example of templates/ValueRangeParameter.xml) -->
+  <Generate template="src/hw/Ranges.xml" output="src/HardwareProfile.ranges.gen.xml" />
+
+  <!-- standard capabilities (LAN, WLAN, TP, display, RTC, SD, buzzer, binary inputs, status LEDs, flash) -->
+  <Import href="../../generator/capabilities/Common.caps.xml" />
+
+  <!-- an application may add its own capability on top of the pack -->
+  <Capability name="LargeFlash" text="Großer Datenspeicher (mind. 8 MB Flash)" expr="defined(DEVICE_FLASH_SIZE_MB) &amp;&amp; DEVICE_FLASH_SIZE_MB >= 8" />
+
+  <!-- features of a board (defines of the board header; names proposed in generator/Anwendungsfaelle.md) -->
+  <Capability name="PowerMeter"    text="Leistungsmessung"   expr="defined(HW_POWER_METER)" />
+  <Capability name="Temperature"   text="Gerätetemperatur"   expr="defined(HW_TEMP_SENSOR)" />
+  <Capability name="FrontControls" text="Frontbedienung"     expr="defined(HW_FRONT_CONTROLS)" />
+  <Capability name="TempHum"       text="Temperatur/Feuchte" expr="defined(HW_SENSOR_TEMP_HUM)" />
+  <Capability name="Co2"           text="CO2"                expr="defined(HW_SENSOR_CO2)" />
+  <Capability name="Lux"           text="Helligkeit"         expr="defined(HW_SENSOR_LUX)" />
+  <Capability name="Presence"      text="Präsenz"            expr="defined(HW_SENSOR_PRESENCE)" />
+  <!-- plug-in module: the board has the slot (expr), runtime="true": the firmware detects the module at run time and reports
+       it through answerQuery(runtimeCaps); switch="true": on/off on the hardware page, the device query sets it from the module -->
+  <Capability name="SensorModule"  text="Steckmodul Sensor"  expr="defined(HW_SLOT_SENSOR)" switch="true" runtime="true" />
+
+  <!-- number of relays of the board (HW_RELAY_COUNT): channels, lists 0..n, fixed values -->
+  <Value name="Relays" text="Relais" expr="HW_RELAY_COUNT" default="0" max="4" />
+
+  <!-- The boards this product supports. Real OGM-HardwareConfig devices. flags = build flags of the
+       env that change a capability (Pico W: WiFi is chosen at build time, not by the board). -->
+  <!-- the boards with a firmware of this demo come from its release_* envs (the page shows "Firmware: <env>") -->
+  <Boards platformio="release_*" />
+  <Board define="DEVICE_REG2_PIPICO2_W_V1_DD_RTC" flags="-DKNX_IP_WIFI" />
+  <Board define="DEVICE_REG1_LAN_TP_BASE" />
+  <Board define="DEVICE_REG1_LAN_BASE" />
+  <Board define="DEVICE_UP1_TAS_4X" />
+  <Board define="DEVICE_AB_BUT_GIR" />
+  <Board define="DEVICE_QUINLED_DIG_QUAD_V3_ETHERNET" />
+  <!-- demo boards (ETS only, include/DemoBoards.h) -->
+  <Board define="DEMO_RAUMCONTROLLER_BASIC" />
+  <Board define="DEMO_RAUMCONTROLLER_PLUS" />
+  <Board define="DEMO_RAUMCONTROLLER_PRO" />
+  <Board define="DEMO_SHELLY_PLUS_1" />
+  <Board define="DEMO_SHELLY_PLUS_1PM" />
+  <Board define="DEMO_SHELLY_PLUS_2PM" />
+  <Board define="DEMO_SHELLY_PLUS_I4" />
+  <Board define="DEMO_SHELLY_PLUG_S" />
+
+  <!-- the hardware page: device card (logo or third-party badge, name, board text, QR code only with HW_INFO_URL),
+       optional texts firmware / changeInfo, third-party notice, developer view (dev, features), help = context help -->
+  <Page text="Hardware" icon="memory" help="DEMO-Hardware" dev="src/HardwareProfile.dev.gen.xml"
+        features="Tp Lan Wifi PowerMeter Temperature FrontControls TempHum Co2 Lux Presence SensorModule Relays BinaryInputs StatusLeds"
+        firmware="Firmware: {env}"
+        changeInfo="Nach einem Wechsel der Hardware die Kanäle und Werte der Applikation prüfen." />
+  <Notice when="ThirdParty" title="Produkt eines Drittanbieters: OpenKNX stellt nur eine kompatible Firmware bereit. Gewährleistung, Support und Produktsicherheit liegen beim Hersteller." />
+  <InfoImage style="card" />
+
+  <!-- A GPIO role: the user picks a free pin per slot, the dropdown lists only the pins of the selected
+       board. number = part of the ETS parameter ID, never change it. scan = regular expression over the
+       macro names of the board header ($1 = first group). Pins the platform uses (KNX UART, prog
+       button/LED, ...) are left out by the ReservedPins of the capability pack. -->
+  <GpioRole name="Pin" number="1" text="Freier Anschluss" count="2">
+    <Pins board="OKNXHW_OPENKNXIAO_*" scan="^OKNXHW_OPENKNXIAO_D(\d+)$" label="D$1" />
+    <Pins board="DEVICE_QUINLED_*"    scan="^QUINLED_(Q\d|EXTRA\d)_GPIO$" label="$1" />
+    <Pins board="DEVICE_REG1_*"       scan="^REG1_APP_PIN(\d+)$" label="APP-Pin $1" />
+  </GpioRole>
+</HardwareProfile>
