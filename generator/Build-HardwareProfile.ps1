@@ -29,7 +29,9 @@ FILEPATH: OGM-HardwareConfig/generator/Build-HardwareProfile.ps1
       - conf   : op:config feature flags for the application XML, e.g. %HWP_CAP_Wifi% = "4896 8480"
       - share  : ETS module (hardware selection, profile overview, detect button, GPIO roles)
       - script : ETS JavaScript (device query via function property, capability check)
-      - header : firmware header (own HW-ID, capability bits, values, function property layout)
+      - header : firmware header (own HW-ID, capability bits, values, function property layout; with portManualValue /
+                 portNoneValue also signalGpio() / relaySignalGpio() for the port selection)
+      - <Conflicts output=...> : ETS parts file of the GPIO conflict check (flags, calculation, Conflict_<name> blocks)
 
     Every output is optional. <Generate template=... output=...> writes further whole files from templates
     ("Bausteine", helpers/TemplateEngine.ps1; standard ones in generator/templates): ETS XML parts for op:include,
@@ -637,6 +639,17 @@ function Read-Manifest([string]$Path) {
   $m.UnselectedValue = 0
   if ("$($root.unselectedValue)") { $m.UnselectedValue = [int]"$($root.unselectedValue)" }
   if ($m.UnselectedValue -lt 0 -or $m.UnselectedValue -ge 65535) { Stop-WithError "unselectedValue must be 0..65534 (65535 marks an empty test list)" }
+  # port value encoding of the application's port selections (one declaration for the ETS conflict check and the firmware
+  # header): 0..n-1 = port n of the board, portManualValue = manual GPIO, portNoneValue = no port, any other value = no GPIO
+  $m.PortManual = $null; $m.PortNone = $null
+  foreach ($a in @(@("portManualValue", "PortManual", 254), @("portNoneValue", "PortNone", 255))) {
+    if (-not $root.HasAttribute($a[0])) { continue }
+    $t = "$($root.GetAttribute($a[0]))".Trim()
+    if ($t -notmatch '^\d+$' -or [int64]$t -gt $a[2]) { Stop-WithError ("{0} must be a number 0..{1}" -f $a[0], $a[2]) }
+    $m[$a[1]] = [int]$t
+  }
+  if (($null -eq $m.PortManual) -ne ($null -eq $m.PortNone)) { Stop-WithError "portManualValue and portNoneValue go together" }
+  if ($null -ne $m.PortManual -and $m.PortManual -eq $m.PortNone) { Stop-WithError "portManualValue and portNoneValue must differ" }
 
   # board order: manifest (default, order of the entries) or hwid (ascending DEVICE_HW_ID)
   $m.Order = "$($root.order)"
@@ -945,7 +958,164 @@ function Read-Manifest([string]$Path) {
     }
     elseif (-not $capIndex.ContainsKey($m.Info.ThirdWhen)) { $m.Info.ThirdWhen = "" }
   }
+  # <Conflicts>: optional GPIO conflict check (one ParameterCalculation); absent = no output changes
+  $m.Conflicts = $null
+  $cfNodes = @($root.SelectNodes("Conflicts"))
+  if ($cfNodes.Count -gt 1) { Stop-WithError "<Conflicts> may appear only once" }
+  if ($cfNodes.Count -eq 1) { $m.Conflicts = Read-ConflictsNode $m $cfNodes[0] $baseDir }
   return $m
+}
+
+# @brief Integer attribute of a <Conflicts>/<Use> element: $null when absent, stop when not a number in Min..Max
+function Get-ConflictInt($Node, [string]$Attr, [int]$Min, [int]$Max, [string]$Where) {
+  if (-not $Node.HasAttribute($Attr)) { return $null }
+  $t = "$($Node.GetAttribute($Attr))".Trim()
+  if ($t -notmatch '^\d+$' -or [int64]$t -lt $Min -or [int64]$t -gt $Max) { Stop-WithError ("{0}: {1} must be a number {2}..{3}" -f $Where, $Attr, $Min, $Max) }
+  return [int]$t
+}
+
+# @brief Condition text -> list of OR groups, each a list of AND terms @{ Param; Op; Values }
+#        Syntax: "<Param> <op> <n>" with op == != < <= > >=, or "<Param> in <n> <n> ..."; terms joined by "and" / "or"
+#        ("and" binds tighter, no parentheses); and / or / in are lower case, numbers are 32-bit integers
+function ConvertFrom-ConflictCondition([string]$Text, [hashtable]$Params, [string]$Where) {
+  $t = ($Text -replace '\s+', ' ').Trim()
+  if (-not $t) { Stop-WithError ("{0}: empty condition" -f $Where) }
+  $ops = @{ "==" = "eq"; "!=" = "ne"; "<" = "lt"; "<=" = "le"; ">" = "gt"; ">=" = "ge" }
+  $groups = @()
+  foreach ($g in ($t -csplit ' or ')) {
+    $terms = @()
+    foreach ($term in ($g -csplit ' and ')) {
+      $term = $term.Trim()
+      $tm = $null; $nums = @()
+      if ($term -cmatch '^([A-Za-z][A-Za-z0-9]*) ?(==|!=|<=|>=|<|>) ?(-?\d+)$') { $tm = @{ Param = $Matches[1]; Op = $ops[$Matches[2]] }; $nums = @($Matches[3]) }
+      elseif ($term -cmatch '^([A-Za-z][A-Za-z0-9]*) in ((-?\d+)( -?\d+)*)$') { $tm = @{ Param = $Matches[1]; Op = "in" }; $nums = @($Matches[2].Split(' ')) }
+      if ($tm) {
+        $vals = @()
+        foreach ($nt in $nums) {
+          $iv = 0
+          if (-not [int]::TryParse($nt, [ref]$iv)) { Stop-WithError ("{0}: condition '{1}' - {2} is not a 32-bit integer" -f $Where, $term, $nt) }
+          $vals += $iv
+        }
+        $tm.Values = $vals
+      }
+      else { Stop-WithError ("{0}: condition '{1}' - expected '<Param> <op> <number>' (op == != < <= > >=, in XML &lt; for <) or '<Param> in <number> ...', joined by and / or" -f $Where, $term) }
+      if (-not $Params.ContainsKey($tm.Param)) { Stop-WithError ("{0}: condition names {1}, which is no <Param name> of <Conflicts>" -f $Where, $tm.Param) }
+      $terms += , $tm
+    }
+    $groups += , $terms
+  }
+  return , $groups
+}
+
+# @brief Reads <Conflicts output number value manual none error><Param name ref/><Use name text when port value manual none
+#        wiredRelay error><Manual ref when/></Use></Conflicts>; board-dependent checks follow in Resolve-Conflicts
+function Read-ConflictsNode($M, $Node, [string]$BaseDir) {
+  $w = "<Conflicts>"
+  $allowed = @("output", "number", "value", "error")
+  foreach ($at in $Node.Attributes) { if ($allowed -cnotcontains $at.Name) { Stop-WithError ("{0}: attribute {1} is not supported (allowed: {2})" -f $w, $at.Name, ($allowed -join ", ")) } }
+  if (-not $M.Outputs.ContainsKey("share") -or -not $M.Outputs.ContainsKey("script")) { Stop-WithError "<Conflicts> needs <Output share=... script=...> (the check function is part of the generated script)" }
+  $out = "$($Node.GetAttribute('output'))"
+  if (-not $out) { Stop-WithError "<Conflicts> needs output=... (file with the parts the application includes)" }
+  $num = Get-ConflictInt $Node "number" 1 99999 $w
+  if ($null -eq $num) { Stop-WithError "<Conflicts> needs number=... (first parameter number of the conflict flags in the including module, also the calculation number)" }
+  $cf = @{ Output = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($BaseDir, $out)); Number = $num; Params = New-Object System.Collections.Generic.List[object]; Uses = New-Object System.Collections.Generic.List[object] }
+  $cf.Value = "$($Node.GetAttribute('value'))"; if (-not $cf.Value) { $cf.Value = "port" }
+  if ($cf.Value -ne "port" -and $cf.Value -ne "gpio") { Stop-WithError "<Conflicts>: value must be port or gpio" }
+  $cf.Error = "$($Node.GetAttribute('error'))"
+  if (-not $cf.Error) { $cf.Error = "GPIO-Konflikt: {text} nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." }
+  $params = @{}
+  foreach ($pn in $Node.SelectNodes("Param")) {
+    $pName = $pn.GetAttribute("name"); $pRef = $pn.GetAttribute("ref")
+    $pw = "<Conflicts><Param name=`"$pName`">"
+    if ($pName -notmatch '^[A-Za-z][A-Za-z0-9]*$') { Stop-WithError ("{0}: name=... is required, alphanumeric" -f $pw) }
+    # calculation alias P_<name>: ETS allows 50 characters (String50_t)
+    if ($pName.Length -gt 48) { Stop-WithError ("{0}: name has {1} characters, at most 48 (alias P_<name>, ETS limit 50)" -f $pw, $pName.Length) }
+    if ($params.ContainsKey($pName)) { Stop-WithError ("{0}: name is used twice" -f $pw) }
+    if (-not $pRef -or $pRef.Contains("{{")) { Stop-WithError ("{0}: needs ref=... (a ParamRefId, no board expression)" -f $pw) }
+    foreach ($q in $cf.Params) { if ($q.Ref -ceq $pRef) { Stop-WithError ("{0}: ref is also <Param name=`"{1}`">" -f $pw, $q.Name) } }
+    $params[$pName] = $true
+    $cf.Params.Add(@{ Name = $pName; Ref = $pRef })
+  }
+  $useNames = @{}
+  foreach ($un in $Node.SelectNodes("Use")) {
+    $uName = $un.GetAttribute("name")
+    $uw = "<Conflicts><Use name=`"$uName`">"
+    $uAllowed = @("name", "text", "when", "port", "value", "wiredRelay", "error")
+    foreach ($at in $un.Attributes) { if ($uAllowed -cnotcontains $at.Name) { Stop-WithError ("{0}: attribute {1} is not supported (allowed: {2})" -f $uw, $at.Name, ($uAllowed -join ", ")) } }
+    if ($uName -notmatch '^[A-Za-z][A-Za-z0-9]*$') { Stop-WithError ("{0}: name=... is required, alphanumeric" -f $uw) }
+    # output alias F_<name>: ETS allows 50 characters (String50_t)
+    if ($uName.Length -gt 48) { Stop-WithError ("{0}: name has {1} characters, at most 48 (alias F_<name>, ETS limit 50)" -f $uw, $uName.Length) }
+    if ($useNames.ContainsKey($uName)) { Stop-WithError ("{0}: name is used twice" -f $uw) }
+    $useNames[$uName] = $true
+    $u = @{ Name = $uName; Text = ($un.GetAttribute("text") -replace '\s+', ' ').Trim(); Port = $un.GetAttribute("port"); When = $null; Manuals = @(); Index = $cf.Uses.Count }
+    if (-not $u.Text) { $u.Text = $uName }
+    $u.Value = "$($un.GetAttribute('value'))"; if (-not $u.Value) { $u.Value = $cf.Value }
+    if ($u.Value -ne "port" -and $u.Value -ne "gpio") { Stop-WithError ("{0}: value must be port or gpio" -f $uw) }
+    # manual / none: the port value encoding of the root (portManualValue / portNoneValue); a GPIO value has none (10 is GPIO 10)
+    $u.Manual = $null; $u.None = $null
+    if ($u.Value -eq "port") { $u.Manual = $M.PortManual; $u.None = $M.PortNone }
+    $u.Wired = Get-ConflictInt $un "wiredRelay" 1 $MAX_RELAYS $uw; if ($null -eq $u.Wired) { $u.Wired = 0 }
+    if (-not $u.Port -and $u.Wired -eq 0) { Stop-WithError ("{0}: needs port=... (selection parameter) or wiredRelay=... (hard-wired relay)" -f $uw) }
+    if ($un.HasAttribute("when")) {
+      if (-not $u.Port) { Stop-WithError ("{0}: when=... needs port=... (a hard-wired relay pin is always occupied)" -f $uw) }
+      $u.When = ConvertFrom-ConflictCondition $un.GetAttribute("when") $params $uw
+    }
+    $u.Error = "$($un.GetAttribute('error'))"; if (-not $u.Error) { $u.Error = $cf.Error }
+    $u.ErrorText = $u.Error.Replace("{text}", $u.Text)
+    if ($u.ErrorText.Length -gt 255) { Stop-WithError ("{0}: the error text has {1} characters, ETS shows at most 255" -f $uw, $u.ErrorText.Length) }
+    $defaultSeen = $false
+    foreach ($mn in $un.SelectNodes("Manual")) {
+      $mw = "$uw <Manual>"
+      if ($defaultSeen) { Stop-WithError ("{0}: follows a <Manual> without when=... and is never used" -f $mw) }
+      $mRef = $mn.GetAttribute("ref")
+      if (-not $mRef -or $mRef.Contains("{{")) { Stop-WithError ("{0}: needs ref=... (ParamRefId of the manual GPIO, no board expression)" -f $mw) }
+      $mWhen = $null
+      if ($mn.HasAttribute("when")) { $mWhen = ConvertFrom-ConflictCondition $mn.GetAttribute("when") $params $mw } else { $defaultSeen = $true }
+      $u.Manuals += , @{ Ref = $mRef; When = $mWhen }
+    }
+    if ($u.Manuals.Count -gt 0 -and $u.Value -ne "port") { Stop-WithError ("{0}: <Manual> needs value=`"port`" (a GPIO value has no manual entry)" -f $uw) }
+    if ($u.Manuals.Count -gt 0 -and $null -eq $u.Manual) { Stop-WithError ("{0}: <Manual> needs portManualValue=... on <HardwareProfile> (the port value of the manual GPIO)" -f $uw) }
+    if (-not $u.Port -and ($u.Manuals.Count -gt 0)) { Stop-WithError ("{0}: <Manual> needs port=..." -f $uw) }
+    $cf.Uses.Add($u)
+  }
+  if ($cf.Uses.Count -lt 2) { Stop-WithError "<Conflicts> needs at least two <Use> entries" }
+  # <ChannelBlock name text uses>: one UI block for a channel template of the OpenKNXproducer (%C% = channel 1..9): the n-th
+  # use of "uses" is channel n; its flag number ends in n, so the block names the flag of its channel through %C%
+  # (the producer substitutes %C% in the included content, not in an op:include xpath)
+  $cf.Channels = New-Object System.Collections.Generic.List[object]
+  foreach ($cn in $Node.SelectNodes("ChannelBlock")) {
+    $cName = $cn.GetAttribute("name")
+    $cw = "<Conflicts><ChannelBlock name=`"$cName`">"
+    if ($cName -notmatch '^[A-Za-z][A-Za-z0-9]*$') { Stop-WithError ("{0}: name=... is required, alphanumeric" -f $cw) }
+    if (@($cf.Channels | Where-Object { $_.Name -eq $cName }).Count -gt 0) { Stop-WithError ("{0}: name is used twice" -f $cw) }
+    $cText = ($cn.GetAttribute("text") -replace '\s+', ' ').Trim()
+    if (-not $cText) { Stop-WithError ("{0}: needs text=... (e.g. with %C%)" -f $cw) }
+    $names = @($cn.GetAttribute("uses") -split '\s+' | Where-Object { $_ })
+    if ($names.Count -lt 1 -or $names.Count -gt 9) { Stop-WithError ("{0}: uses must name 1..9 <Use> entries (channel 1..9, %C% is one digit)" -f $cw) }
+    $ch = @{ Name = $cName; Text = $cText; Index = $cf.Channels.Count + 1; Uses = @() }
+    for ($n = 0; $n -lt $names.Count; $n++) {
+      $hit = @($cf.Uses | Where-Object { $_.Name -eq $names[$n] })
+      if ($hit.Count -eq 0) { Stop-WithError ("{0}: {1} is no <Use name>" -f $cw, $names[$n]) }
+      if ($hit[0].ContainsKey("Channel")) { Stop-WithError ("{0}: {1} is already channel {2} of {3}" -f $cw, $names[$n], $hit[0].Channel.N, $hit[0].Channel.Block) }
+      $hit[0].Channel = @{ Block = $cName; Group = $ch.Index; N = $n + 1 }
+      $ch.Uses += $hit[0]
+    }
+    # one block, one text: the uses of a block share their error template (error=... of <Use>, else of <Conflicts>)
+    $templates = @($ch.Uses | ForEach-Object { $_.Error } | Sort-Object -Unique -CaseSensitive)
+    if ($templates.Count -gt 1) { Stop-WithError ("{0}: its uses have different error=... texts - give them one text (the block shows one message per channel)" -f $cw) }
+    $ch.ErrorText = $templates[0].Replace("{text}", $cText)
+    if ($ch.ErrorText.Length -gt 255) { Stop-WithError ("{0}: the error text has {1} characters, ETS shows at most 255" -f $cw, $ch.ErrorText.Length) }
+    $cf.Channels.Add($ch)
+  }
+  if ($cf.Channels.Count -gt 0) {
+    # flag numbers: uses outside a channel block number + 0..9, channel block k use n number + 10 k + n
+    if ($cf.Number % 10 -ne 0) { Stop-WithError ("<Conflicts>: number must be a multiple of 10 with <ChannelBlock> (flag number of channel n ends in n), not {0}" -f $cf.Number) }
+    $free = @($cf.Uses | Where-Object { -not $_.ContainsKey("Channel") }).Count
+    if ($free -gt 10) { Stop-WithError ("<Conflicts>: with <ChannelBlock> at most 10 <Use> entries outside a channel block (number + 0..9), not {0}" -f $free) }
+    if ($cf.Channels.Count -gt 9 -or $cf.Number + 10 * $cf.Channels.Count + 9 -gt 99999) { Stop-WithError "<Conflicts>: at most 9 <ChannelBlock> entries, and number + 10 x blocks + 9 must stay within 99999" }
+  }
+  if ($cf.Channels.Count -eq 0 -and $cf.Number + $cf.Uses.Count - 1 -gt 99999) { Stop-WithError ("<Conflicts>: number {0} + {1} flags exceeds 99999" -f $cf.Number, $cf.Uses.Count) }
+  return $cf
 }
 
 # ------------------------------------------------------------------------------------------------
@@ -1586,6 +1756,8 @@ function New-ConfXml($M, $Boards) {
   [void]$sb.AppendLine("  <!-- a module uses only the feature flags it needs; the rest is expected to stay unused -->")
   [void]$sb.AppendLine(("  <op:nowarn id=`"1`" regex=`"%{0}_`" />" -f $p))
   [void]$sb.AppendLine(("  <op:nowarn id=`"3`" regex=`"{0}_hex4`" />" -f $p))
+  # <Conflicts>: helpers of the check, called only from {prefix}_conflictCheck
+  if ($M.Conflicts) { [void]$sb.AppendLine(("  <op:nowarn id=`"3`" regex=`"{0}_conflict(Int|When|Gpio|Flags)`" />" -f $p)) }
   [void]$sb.AppendLine("  <!-- GPIO roles: the per-board parameters of one slot share one byte on purpose (ETS union) -->")
   [void]$sb.AppendLine(("  <op:nowarn id=`"10`" regex=`"{0}_.*B\d+`" />" -f $p))
   # the hardware selection of the generated module; an OAM without that module has its own
@@ -2335,7 +2507,321 @@ $swLoop
 $swDone
 }
 "@)
+  if ($M.Conflicts) { [void]$sb.Append((New-ConflictsJs $M $Boards)) }
   return $sb.ToString()
+}
+
+# ------------------------------------------------------------------------------------------------
+# GPIO conflict check (<Conflicts>)
+# ------------------------------------------------------------------------------------------------
+# @brief Board-dependent part of <Conflicts>: port parameter of every use per board (port="..." with {{ }} expressions,
+#        $b = board, $tt = ModuleType of the hardware module, two digits), the aliases of the calculation inputs and the checks that need the boards
+function Resolve-Conflicts($M, $Boards) {
+  $cf = $M.Conflicts
+  $refs = Get-ParamRefIds $M
+  $node = @{ Path = $M.ManifestPath; Line = 0 }
+  # calculation inputs in order: selection, <Param>, manual GPIO parameters, port parameters; one alias per RefId
+  $inputs = New-Object System.Collections.Generic.List[object]
+  $byRef = @{}
+  $inputs.Add(@{ Ref = $refs.Select; Alias = "Sel" }); $byRef[$refs.Select] = "Sel"
+  foreach ($pr in $cf.Params) {
+    if ($byRef.ContainsKey($pr.Ref)) { Stop-WithError ("<Conflicts><Param name=`"{0}`">: ref is the hardware selection" -f $pr.Name) }
+    $pr.Alias = "P_" + $pr.Name
+    $inputs.Add(@{ Ref = $pr.Ref; Alias = $pr.Alias }); $byRef[$pr.Ref] = $pr.Alias
+  }
+  foreach ($u in $cf.Uses) {
+    for ($k = 0; $k -lt $u.Manuals.Count; $k++) {
+      $mr = $u.Manuals[$k]
+      if ($mr.Ref -ceq $refs.Select) { Stop-WithError ("<Conflicts><Use name=`"{0}`"> <Manual>: ref is the hardware selection" -f $u.Name) }
+      if (-not $byRef.ContainsKey($mr.Ref)) { $byRef[$mr.Ref] = ("M{0}_{1}" -f $u.Index, $k); $inputs.Add(@{ Ref = $mr.Ref; Alias = $byRef[$mr.Ref] }) }
+      $mr.Alias = $byRef[$mr.Ref]
+    }
+  }
+  $maxWired = 0
+  foreach ($u in $cf.Uses) { if ($u.Wired -gt $maxWired) { $maxWired = $u.Wired } }
+  $portRefs = @{}
+  foreach ($u in $cf.Uses) {
+    $uw = "<Conflicts><Use name=`"$($u.Name)`">"
+    $u.Mode = 0   # 0 = no port parameter, 1 = one per board (alias U<i>B<slot>), 2 = one for all boards (alias U<i>)
+    $u.BoardRefs = @{}
+    if (-not $u.Port) { continue }
+    foreach ($b in $Boards) {
+      # a hard-wired relay of the board has no port parameter
+      if ($u.Wired -gt 0 -and @($b.Relays).Count -ge $u.Wired) { continue }
+      try { $r = Expand-TplLine $u.Port @{ b = $b; tt = ("{0:D2}" -f $M.ModuleType); Boards = $Boards; M = $M } $node }
+      catch { Stop-WithError ("{0}: port: {1}" -f $uw, $_.Exception.Message) }
+      if ($r -notmatch '^%AID%_\S+_R-\S+$' -and $r -notmatch '^%[A-Za-z0-9_]+%$') { Stop-WithError ("{0}: port gives '{1}' for {2}, not a ParamRefId (%AID%_..._R-...)" -f $uw, $r, $b.Define) }
+      $u.BoardRefs[$b.Slot] = $r
+    }
+    $distinct = @($u.BoardRefs.Values | Sort-Object -Unique -CaseSensitive)
+    if ($distinct.Count -eq 0) { continue }
+    # one parameter for every board that has one (also a per-board pattern that leaves a single board): input U<i>
+    $u.Mode = 1
+    if ($distinct.Count -eq 1) { $u.Mode = 2 }
+    foreach ($slot in @($u.BoardRefs.Keys | Sort-Object)) {
+      $r = $u.BoardRefs[$slot]
+      if ($byRef.ContainsKey($r)) { Stop-WithError ("{0}: port parameter {1} is also the hardware selection, a <Param> or a <Manual>" -f $uw, $r) }
+      if ($u.Mode -eq 1 -and $portRefs.ContainsKey($r)) { Stop-WithError ("{0}: port parameter {1} is also used by {2} - one selection parameter per use and board" -f $uw, $r, $portRefs[$r]) }
+      if ($u.Mode -eq 2 -and $portRefs.ContainsKey($r) -and $portRefs[$r] -ne $u.Name) { Stop-WithError ("{0}: port parameter {1} is also used by {2}" -f $uw, $r, $portRefs[$r]) }
+      $portRefs[$r] = $u.Name
+    }
+    if ($u.Mode -eq 2) { $inputs.Add(@{ Ref = $distinct[0]; Alias = "U$($u.Index)" }) }
+    else { foreach ($slot in @($u.BoardRefs.Keys | Sort-Object)) { $inputs.Add(@{ Ref = $u.BoardRefs[$slot]; Alias = ("U{0}B{1}" -f $u.Index, $slot) }) } }
+  }
+  if ($maxWired -gt 0) {
+    foreach ($b in $Boards) {
+      if (@($b.Relays).Count -gt $maxWired) { Write-Warn ("<Conflicts>: {0} has {1} hard-wired relays, the conflict check knows relays 1..{2} (wiredRelay)" -f $b.Define, @($b.Relays).Count, $maxWired) }
+    }
+  }
+  $cf.Inputs = $inputs.ToArray()
+  $free = 0
+  for ($i = 0; $i -lt $cf.Uses.Count; $i++) {
+    $u = $cf.Uses[$i]
+    if ($cf.Channels.Count -eq 0) { $u.FlagNum = "{0:D5}" -f ($cf.Number + $i) }
+    elseif ($u.ContainsKey("Channel")) { $u.FlagNum = "{0:D5}" -f ($cf.Number + 10 * $u.Channel.Group + $u.Channel.N) }
+    else { $u.FlagNum = "{0:D5}" -f ($cf.Number + $free); $free++ }
+    $u.FlagRef = "%AID%_P-%TT%{0}_R-%TT%{0}01" -f $u.FlagNum
+  }
+}
+
+# @brief Condition as a JavaScript table: [[[alias, op, [values]], ...AND], ...OR]; null = always
+function ConvertTo-ConflictJsCondition($When, $Cf) {
+  if ($null -eq $When) { return "null" }
+  $alias = @{}
+  foreach ($pr in $Cf.Params) { $alias[$pr.Name] = $pr.Alias }
+  $groups = @()
+  foreach ($g in $When) {
+    $terms = @()
+    foreach ($t in $g) { $terms += ("[`"{0}`", `"{1}`", [{2}]]" -f $alias[$t.Param], $t.Op, (@($t.Values) -join ", ")) }
+    $groups += ("[" + ($terms -join ", ") + "]")
+  }
+  return ("[" + ($groups -join ", ") + "]")
+}
+
+# @brief JavaScript of the conflict check: use table, board table, generic check, output writer (one line per flag)
+function New-ConflictsJs($M, $Boards) {
+  $p = $M.Prefix
+  $cf = $M.Conflicts
+  $sb = New-Object System.Text.StringBuilder
+  [void]$sb.AppendLine("")
+  [void]$sb.AppendLine("// GPIO conflict check (<Conflicts>): ${p}_conflictCheck is the LR function of one ParameterCalculation. Every active")
+  [void]$sb.AppendLine("// use resolves to a GPIO of the selected board; two uses with the same GPIO both get their flag. No board: all 0.")
+  [void]$sb.AppendLine("// n: name; w: condition (OR of AND terms [input, op, values]), null = always; g: 1 = value is the GPIO, 0 = port index;")
+  [void]$sb.AppendLine("// m / x: value for manual / none (-1: none); man: [condition, input of the manual GPIO], first match wins;")
+  [void]$sb.AppendLine("// r: hard-wired relay number (pin always occupied on boards with that relay); p: 0 no port parameter, 1 one per board")
+  [void]$sb.AppendLine("// (input U<i>B<board number>), 2 one for all boards (input U<i>)")
+  [void]$sb.AppendLine("var ${p}_conflictUses = [")
+  $rows = @()
+  foreach ($u in $cf.Uses) {
+    $man = @($u.Manuals | ForEach-Object { "[{0}, `"{1}`"]" -f (ConvertTo-ConflictJsCondition $_.When $cf), $_.Alias })
+    $mv = -1; if ($null -ne $u.Manual) { $mv = $u.Manual }
+    $xv = -1; if ($null -ne $u.None) { $xv = $u.None }
+    $gv = 0; if ($u.Value -eq "gpio") { $gv = 1 }
+    $rows += ("    {{ n: {0}, w: {1}, g: {2}, m: {3}, x: {4}, man: [{5}], r: {6}, p: {7} }}" -f (ConvertTo-JsString $u.Name), (ConvertTo-ConflictJsCondition $u.When $cf), $gv, $mv, $xv, ($man -join ", "), $u.Wired, $u.Mode)
+  }
+  [void]$sb.AppendLine(($rows -join ",`n"))
+  [void]$sb.AppendLine("];")
+  [void]$sb.AppendLine("// DEVICE_HW_ID -> s: board number, ports: GPIO per port value (null: port not offered), relays: GPIO of the hard-wired relays")
+  [void]$sb.AppendLine("var ${p}_conflictBoards = {")
+  $rows = @()
+  foreach ($b in $Boards) {
+    $maxN = 0; foreach ($pt in @($b.Ports)) { if ($pt.N -gt $maxN) { $maxN = $pt.N } }
+    $ports = @()
+    for ($n = 1; $n -le $maxN; $n++) {
+      $pt = @($b.Ports | Where-Object { $_.N -eq $n })
+      if ($pt.Count -gt 0) { $ports += [string]$pt[0].Gpio } else { $ports += "null" }
+    }
+    $relays = @($b.Relays | ForEach-Object { [string]$_.Gpio })
+    $rows += ("    {0}: {{ s: {1}, ports: [{2}], relays: [{3}] }}" -f $b.HwId, $b.Slot, ($ports -join ", "), ($relays -join ", "))
+  }
+  [void]$sb.AppendLine(($rows -join ",`n"))
+  [void]$sb.AppendLine("};")
+  [void]$sb.AppendLine(@"
+
+function ${p}_conflictInt(value, fallback) {
+    if (typeof value == "number") return value;
+    var n = parseInt(value, 10);
+    return isNaN(n) ? fallback : n;
+}
+
+// condition of a use or a manual GPIO: OR over groups, AND within a group
+function ${p}_conflictWhen(input, when) {
+    if (!when) return true;
+    for (var g = 0; g < when.length; g++) {
+        var ok = true;
+        for (var t = 0; t < when[g].length && ok; t++) {
+            var v = ${p}_conflictInt(input[when[g][t][0]], 0);
+            var op = when[g][t][1];
+            var vals = when[g][t][2];
+            if (op == "in") {
+                ok = false;
+                for (var k = 0; k < vals.length; k++) if (v == vals[k]) ok = true;
+            }
+            else if (op == "eq") ok = (v == vals[0]);
+            else if (op == "ne") ok = (v != vals[0]);
+            else if (op == "lt") ok = (v < vals[0]);
+            else if (op == "le") ok = (v <= vals[0]);
+            else if (op == "gt") ok = (v > vals[0]);
+            else ok = (v >= vals[0]);
+        }
+        if (ok) return true;
+    }
+    return false;
+}
+
+// GPIO of use u (index i) on the board, -1 when it takes no GPIO
+function ${p}_conflictGpio(input, u, i, board) {
+    if (u.r > 0 && u.r <= board.relays.length) return board.relays[u.r - 1];
+    if (u.p == 0 || !${p}_conflictWhen(input, u.w)) return -1;
+    var v = ${p}_conflictInt(input[u.p == 2 ? "U" + i : "U" + i + "B" + board.s], -1);
+    if (u.m >= 0 && v == u.m) {
+        for (var k = 0; k < u.man.length; k++) {
+            if (!${p}_conflictWhen(input, u.man[k][0])) continue;
+            var gpio = ${p}_conflictInt(input[u.man[k][1]], -1);
+            return (gpio >= 0 && gpio < 255) ? gpio : -1;
+        }
+        return -1;
+    }
+    if (u.x >= 0 && v == u.x) return -1;
+    if (u.g) return (v >= 0 && v < 255) ? v : -1;
+    if (v >= 0 && v < board.ports.length && board.ports[v] !== null) return board.ports[v];
+    return -1;
+}
+
+// conflict flag per use (0/1), all 0 while no or an unknown board is selected
+function ${p}_conflictFlags(input) {
+    var uses = ${p}_conflictUses;
+    var flags = [];
+    var gpio = [];
+    var i;
+    for (i = 0; i < uses.length; i++) { flags.push(0); gpio.push(-1); }
+    var board = ${p}_conflictBoards[${p}_conflictInt(input.Sel, -1)];
+    if (!board) return flags;
+    for (i = 0; i < uses.length; i++) gpio[i] = ${p}_conflictGpio(input, uses[i], i, board);
+    for (i = 0; i < uses.length; i++) {
+        if (gpio[i] < 0) continue;
+        for (var j = i + 1; j < uses.length; j++) {
+            if (gpio[j] == gpio[i]) { flags[i] = 1; flags[j] = 1; }
+        }
+    }
+    return flags;
+}
+
+// LR function of the conflict calculation; the flags are written with dot names (the output aliases)
+function ${p}_conflictCheck(input, output, context) {
+    var f = ${p}_conflictFlags(input);
+"@.TrimEnd())
+  for ($i = 0; $i -lt $cf.Uses.Count; $i++) { [void]$sb.AppendLine(("    output.F_{0} = f[{1}];" -f $cf.Uses[$i].Name, $i)) }
+  [void]$sb.AppendLine("}")
+  [void]$sb.AppendLine("")
+  [void]$sb.AppendLine("// RL function of the conflict calculation: the flags are outputs only")
+  [void]$sb.AppendLine("function ${p}_conflictNone(input, output, context) {")
+  [void]$sb.AppendLine("}")
+  return $sb.ToString()
+}
+
+# @brief Parts file of <Conflicts output>: ParameterType, flag Parameters (no memory) and ParameterRefs, the calculation,
+#        one UI block Conflict_<Name> per use; the application includes each part into its own module (%TT%)
+function New-ConflictsXml($M, $Boards) {
+  $p = $M.Prefix
+  $cf = $M.Conflicts
+  $sb = New-Object System.Text.StringBuilder
+  [void]$sb.AppendLine('<?xml version="1.0" encoding="utf-8"?>')
+  [void]$sb.AppendLine('<KNX xmlns="http://knx.org/xml/project/20" xmlns:op="http://github.com/OpenKNX/OpenKNXproducer">')
+  [void]$sb.AppendLine("  <!-- Generated by OGM-HardwareConfig/generator/Build-HardwareProfile.ps1 (<Conflicts>) - do not edit -->")
+  [void]$sb.AppendLine("  <!-- include into one module: ParameterType (xpath //ApplicationProgram/Static/ParameterTypes/ParameterType), blocks Parameters,")
+  [void]$sb.AppendLine("       ParameterRefs, Calculation (into ParameterCalculations), Conflict_<Name> (error while the use is in conflict, any page) -->")
+  [void]$sb.AppendLine('  <ManufacturerData><Manufacturer><ApplicationPrograms><ApplicationProgram><Static><ParameterTypes>')
+  [void]$sb.AppendLine(("    <ParameterType Id=`"%AID%_PT-{0}ConflictFlag`" Name=`"{0}ConflictFlag`">" -f $p))
+  [void]$sb.AppendLine('      <TypeNumber SizeInBit="1" Type="unsignedInt" minInclusive="0" maxInclusive="1" />')
+  [void]$sb.AppendLine('    </ParameterType>')
+  [void]$sb.AppendLine('  </ParameterTypes></Static></ApplicationProgram></ApplicationPrograms></Manufacturer></ManufacturerData>')
+  [void]$sb.AppendLine('  <Block name="Parameters">')
+  foreach ($u in $cf.Uses) {
+    [void]$sb.AppendLine(("    <Parameter Id=`"%AID%_P-%TT%{0}`" Name=`"Conflict{1}`" ParameterType=`"%AID%_PT-{2}ConflictFlag`" Text=`"{3}`" Value=`"0`" Access=`"None`" />" -f $u.FlagNum, $u.Name, $p, (ConvertTo-XmlText ("Konflikt " + $u.Text))))
+  }
+  [void]$sb.AppendLine('  </Block>')
+  [void]$sb.AppendLine('  <Block name="ParameterRefs">')
+  foreach ($u in $cf.Uses) { [void]$sb.AppendLine(("    <ParameterRef Id=`"{0}`" RefId=`"%AID%_P-%TT%{1}`" />" -f $u.FlagRef, $u.FlagNum)) }
+  [void]$sb.AppendLine('  </Block>')
+  [void]$sb.AppendLine('  <Block name="Calculation">')
+  [void]$sb.AppendLine(("    <ParameterCalculation Id=`"%AID%_PC-%TT%{0:D5}`" Language=`"JavaScript`" Name=`"{1}GpioConflicts`" LRTransformationFunc=`"{1}_conflictCheck`" RLTransformationFunc=`"{1}_conflictNone`">" -f $cf.Number, $p))
+  [void]$sb.AppendLine('      <LParameters>')
+  foreach ($in in $cf.Inputs) { [void]$sb.AppendLine(("        <ParameterRefRef RefId=`"{0}`" AliasName=`"{1}`" />" -f (ConvertTo-XmlText $in.Ref), $in.Alias)) }
+  [void]$sb.AppendLine('      </LParameters>')
+  [void]$sb.AppendLine('      <RParameters>')
+  foreach ($u in $cf.Uses) { [void]$sb.AppendLine(("        <ParameterRefRef RefId=`"{0}`" AliasName=`"F_{1}`" />" -f $u.FlagRef, $u.Name)) }
+  [void]$sb.AppendLine('      </RParameters>')
+  [void]$sb.AppendLine('    </ParameterCalculation>')
+  [void]$sb.AppendLine('  </Block>')
+  foreach ($u in $cf.Uses) {
+    # the flag is referenced (Access None, invisible): a choose is active only while its parameter is active
+    [void]$sb.AppendLine(("  <Block name=`"Conflict_{0}`">" -f $u.Name))
+    [void]$sb.AppendLine(("    <ParameterRefRef RefId=`"{0}`" />" -f $u.FlagRef))
+    [void]$sb.AppendLine(("    <choose ParamRefId=`"{0}`">" -f $u.FlagRef))
+    [void]$sb.AppendLine(("      <when test=`"1`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Error`" /></when>" -f (ConvertTo-XmlText $u.ErrorText)))
+    [void]$sb.AppendLine('    </choose>')
+    [void]$sb.AppendLine('  </Block>')
+  }
+  foreach ($ch in $cf.Channels) {
+    # in a channel template: %C% (channel n) completes the flag number of the n-th use (number + 10 k + n)
+    $ref = "%AID%_P-%TT%{0:D4}%C%_R-%TT%{0:D4}%C%01" -f [int](($cf.Number + 10 * $ch.Index) / 10)
+    [void]$sb.AppendLine(("  <Block name=`"ConflictChannel_{0}`">" -f $ch.Name))
+    [void]$sb.AppendLine(("    <ParameterRefRef RefId=`"{0}`" />" -f $ref))
+    [void]$sb.AppendLine(("    <choose ParamRefId=`"{0}`">" -f $ref))
+    [void]$sb.AppendLine(("      <when test=`"1`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Error`" /></when>" -f (ConvertTo-XmlText $ch.ErrorText)))
+    [void]$sb.AppendLine('    </choose>')
+    [void]$sb.AppendLine('  </Block>')
+  }
+  [void]$sb.AppendLine('</KNX>')
+  return $sb.ToString()
+}
+
+# @brief Parts files of <Conflicts> the generator wrote earlier (marker line) in the folders of this run's outputs, other than
+#        the current one: left over when <Conflicts> or its output changed. Reported, never deleted (a warning; -Check counts
+#        them as not current)
+function Get-StaleConflictFiles($M, [string[]]$Outputs) {
+  $marker = "<!-- Generated by OGM-HardwareConfig/generator/Build-HardwareProfile.ps1 (<Conflicts>) - do not edit -->"
+  $current = ""
+  if ($M.Conflicts) { $current = $M.Conflicts.Output }
+  $stale = @()
+  foreach ($dir in @($Outputs | ForEach-Object { [System.IO.Path]::GetDirectoryName($_) } | Sort-Object -Unique)) {
+    if (-not (Test-Path -LiteralPath $dir -PathType Container)) { continue }
+    foreach ($f in @(Get-ChildItem -LiteralPath $dir -Filter "*.xml" -File)) {
+      if ($f.FullName -eq $current) { continue }
+      $head = @(Get-Content -LiteralPath $f.FullName -TotalCount 3 -Encoding UTF8)
+      if ($head -contains ("  " + $marker)) { $stale += $f.FullName }
+    }
+  }
+  return ,$stale
+}
+
+# @brief Flag and calculation numbers of <Conflicts> against the IDs of the XML files next to its output (the module that
+#        includes the parts usually sits there): a hit is a warning naming the file. A hint only: %TT% (the module) is not
+#        compared, IDs built with %C% or {{ }} and files in other folders are not seen; files this run writes and parts
+#        files of earlier runs (marker line) are not searched. The application keeps the numbers free in its module.
+function Test-ConflictNumbers($M, [string[]]$Outputs) {
+  $cf = $M.Conflicts
+  $flags = @{}
+  foreach ($u in $cf.Uses) { $flags[$u.FlagNum] = $u.Name }
+  $calc = "{0:D5}" -f $cf.Number
+  $dir = [System.IO.Path]::GetDirectoryName($cf.Output)
+  if (-not (Test-Path -LiteralPath $dir -PathType Container)) { return }
+  $marker = "  <!-- Generated by OGM-HardwareConfig/generator/Build-HardwareProfile.ps1 (<Conflicts>) - do not edit -->"
+  foreach ($f in @(Get-ChildItem -LiteralPath $dir -Filter "*.xml" -File)) {
+    if ($Outputs -contains $f.FullName -or $f.Name -like "*.debug.xml") { continue }
+    if (@(Get-Content -LiteralPath $f.FullName -TotalCount 3 -Encoding UTF8) -contains $marker) { continue }
+    $text = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8)
+    $hits = @{}
+    foreach ($mt in [regex]::Matches($text, '_(U?P|PC)-%TT%(\d{5})["_]')) {
+      $kind = $mt.Groups[1].Value; $num = $mt.Groups[2].Value
+      if ($kind -ne "PC" -and $flags.ContainsKey($num)) { $hits["P-%TT%" + $num + " (flag of " + $flags[$num] + ")"] = $true }
+      if ($kind -eq "PC" -and $num -eq $calc) { $hits["PC-%TT%" + $num + " (calculation)"] = $true }
+    }
+    if ($hits.Count -gt 0) {
+      Write-Warn ("<Conflicts number={0}>: {1} uses {2} - if that file is the module that includes the parts, choose another number" -f $cf.Number, $f.Name, ((@($hits.Keys) | Sort-Object) -join ", "))
+    }
+  }
 }
 
 # @brief Bit mask of the runtime="true" capabilities
@@ -2507,6 +2993,55 @@ function New-Header($M, $Boards) {
       }
     }
   }
+  if ($null -ne $M.PortManual) { [void]$sb.Append((New-PortValuesHeader $M)) }
+  return $sb.ToString()
+}
+
+# @brief Firmware part of the port value encoding (root portManualValue / portNoneValue): constants and the resolution of a
+#        port selection to a GPIO with the helpers of include/HardwareConfig/Helpers/HardwarePorts.h. The selection guard is
+#        a parameter: a port byte holds a value for this board only while the ETS hardware selection is this board.
+function New-PortValuesHeader($M) {
+  $p = $M.Prefix
+  $sb = New-Object System.Text.StringBuilder
+  [void]$sb.AppendLine("")
+  [void]$sb.AppendLine("// Port selections (HardwareProfile.xml portManualValue / portNoneValue, the same values as the ETS conflict check):")
+  [void]$sb.AppendLine("// 0..n-1 = port n of the board (hwPortGpio), PORT_MANUAL = the manual GPIO parameter, PORT_NONE and every value that")
+  [void]$sb.AppendLine("// is no port of the board = no GPIO; PORT_MANUAL and PORT_NONE are tested first, a described port on one of them is")
+  [void]$sb.AppendLine("// never used (the generator stops when ETS offers such a port). Pass Param${p}_HardwareSelect as 'selected': another")
+  [void]$sb.AppendLine("// or no board gives GPIO_NONE")
+  [void]$sb.AppendLine("// (ETS writes the port bytes for the selected board only; an unwritten byte reads 0 = port 1).")
+  [void]$sb.AppendLine('#include "HardwareConfig/Helpers/HardwarePorts.h"')
+  [void]$sb.AppendLine("namespace HardwareProfile")
+  [void]$sb.AppendLine("{")
+  [void]$sb.AppendLine("constexpr uint8_t PORT_MANUAL = $($M.PortManual);")
+  [void]$sb.AppendLine("constexpr uint8_t PORT_NONE = $($M.PortNone);")
+  [void]$sb.AppendLine("constexpr uint8_t GPIO_NONE = 255;")
+  [void]$sb.AppendLine("")
+  [void]$sb.AppendLine("/// @brief true when the ETS hardware selection is this board (never while nothing is selected)")
+  [void]$sb.AppendLine("constexpr bool selectionIsOwn(uint16_t selected)")
+  [void]$sb.AppendLine("{")
+  [void]$sb.AppendLine("    return selected != NOT_SELECTED && selected == OWN_HW_ID;")
+  [void]$sb.AppendLine("}")
+  [void]$sb.AppendLine("")
+  [void]$sb.AppendLine("/// @brief GPIO of a signal from its port selection: PORT_MANUAL -> manualGpio, a port of the board -> hwPortGpio(), else GPIO_NONE")
+  [void]$sb.AppendLine("/// @param selected ETS hardware selection (Param${p}_HardwareSelect); not this board -> GPIO_NONE")
+  [void]$sb.AppendLine("constexpr uint8_t signalGpio(uint16_t selected, uint8_t portValue, uint8_t manualGpio)")
+  [void]$sb.AppendLine("{")
+  [void]$sb.AppendLine("    return !selectionIsOwn(selected) ? GPIO_NONE")
+  [void]$sb.AppendLine("         : portValue == PORT_MANUAL ? manualGpio")
+  [void]$sb.AppendLine("         : portValue == PORT_NONE ? GPIO_NONE")
+  [void]$sb.AppendLine("         : hwPortGpio(portValue);")
+  [void]$sb.AppendLine("}")
+  [void]$sb.AppendLine("")
+  [void]$sb.AppendLine("/// @brief GPIO of relay relayIndex (0-based): a hard-wired relay (relayIndex < hwRelayCount()) -> hwRelayGpio(), its port byte")
+  [void]$sb.AppendLine("///        is ignored; every further relay -> signalGpio(). Not this board -> GPIO_NONE, also for a hard-wired relay.")
+  [void]$sb.AppendLine("constexpr uint8_t relaySignalGpio(uint16_t selected, uint8_t relayIndex, uint8_t portValue, uint8_t manualGpio)")
+  [void]$sb.AppendLine("{")
+  [void]$sb.AppendLine("    return !selectionIsOwn(selected) ? GPIO_NONE")
+  [void]$sb.AppendLine("         : relayIndex < hwRelayCount() ? hwRelayGpio(relayIndex)")
+  [void]$sb.AppendLine("         : signalGpio(selected, portValue, manualGpio);")
+  [void]$sb.AppendLine("}")
+  [void]$sb.AppendLine("} // namespace HardwareProfile")
   return $sb.ToString()
 }
 
@@ -2794,6 +3329,17 @@ try {
   # ids="index": the board number in IDs is the list position (no slot file); else the slot file
   if ($m.Ids -eq "index") { foreach ($b in $boards) { $b.Slot = $b.Index } }
   else { Update-BoardSlots $m $boards }
+  # port value encoding: no offered port may sit on the manual or none value (it could never be selected)
+  if ($null -ne $m.PortManual) {
+    foreach ($b in $boards) {
+      foreach ($pt in @($b.Ports)) {
+        foreach ($kv in @(@("portManualValue", $m.PortManual), @("portNoneValue", $m.PortNone))) {
+          if (($pt.N - 1) -eq $kv[1]) { Stop-WithError ("{0}: ETS offers port {1}, its port value {3} (port number - 1) is {2} - leave the port out with <Ports use=...> or choose other values (e.g. 254 / 255)" -f $b.Define, $pt.N, $kv[0], $kv[1]) }
+        }
+      }
+    }
+  }
+  if ($m.Conflicts) { Resolve-Conflicts $m $boards }
 
   # device card pictures (logo, badge, QR code + link): rendered with the text outputs, written after them
   $m.InfoGroups = Get-InfoGroups $m $boards
@@ -2831,6 +3377,7 @@ try {
   if ($m.Page -and $m.Page.Dev) { Write-OutputActivity "erzeugen" $m.Page.Dev; $rendered += @{ Output = $m.Page.Dev; Text = (New-DevShareXml $m $boards) } }
   if ($m.Outputs.ContainsKey("script")) { Write-OutputActivity "erzeugen" $m.Outputs["script"]; $rendered += @{ Output = $m.Outputs["script"]; Text = (New-ScriptJs $m $boards) } }
   if ($m.Outputs.ContainsKey("header")) { Write-OutputActivity "erzeugen" $m.Outputs["header"]; $rendered += @{ Output = $m.Outputs["header"]; Text = (New-Header $m $boards) } }
+  if ($m.Conflicts) { Write-OutputActivity "erzeugen" $m.Conflicts.Output; $rendered += @{ Output = $m.Conflicts.Output; Text = (New-ConflictsXml $m $boards) } }
 
   # templates ("Bausteine"): whole generated files, never a splice into a hand-written file
   $vars = @{ Boards = $boards; M = $m }
@@ -2840,6 +3387,13 @@ try {
     try { $text = Invoke-TemplateFile -FullPath $g.Template -Vars $vars -FinalNewline $g.FinalNewline }
     catch { Stop-WithError ("Template {0}: {1}" -f $g.Template, $_.Exception.Message) }
     $rendered += @{ Output = $g.Output; Text = $text }
+  }
+  # <Conflicts>: numbers against the module files next to the parts file (hint); a parts file of an earlier run is reported
+  $ownOutputs = @($rendered | ForEach-Object { [System.IO.Path]::GetFullPath($_.Output) })
+  if ($m.Conflicts) { Test-ConflictNumbers $m $ownOutputs }
+  foreach ($f in (Get-StaleConflictFiles $m $ownOutputs)) {
+    Write-Warn ("{0} is a <Conflicts> parts file of an earlier run (no <Conflicts output> names it any more) - delete it and its op:include lines" -f $f)
+    if ($script:CheckMode) { Add-Written $f }
   }
   foreach ($r in $rendered) {
     Write-OutputActivity "vergleichen" $r.Output
@@ -2891,7 +3445,7 @@ try {
     $parts += ("{0} Boards" -f $boards.Count)
     if ($script:CheckMode) {
       if ($script:WrittenCount -eq 0) { Write-Host ("Hardware: {0}, Check: aktuell" -f ($parts -join ", ")) -ForegroundColor Green; exit 0 }
-      Write-Host ("Hardware: {0}, Check: {1} Datei(en) nicht aktuell: {2} - Generator laufen lassen" -f ($parts -join ", "), $script:WrittenCount, ($script:WrittenFiles -join ", ")) -ForegroundColor Red
+      Write-Host ("Hardware: {0}, Check: {1} Datei(en) nicht aktuell: {2} - Generator laufen lassen (veraltete <Conflicts>-Dateien von Hand l{3}schen)" -f ($parts -join ", "), $script:WrittenCount, ($script:WrittenFiles -join ", "), [char]0xF6) -ForegroundColor Red
       exit 1
     }
     if ($script:WrittenCount -eq 0) { $state = "unver" + [string][char]0xE4 + "ndert" }

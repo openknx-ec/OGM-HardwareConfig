@@ -5,7 +5,8 @@ Kurze Rezepte. Jedes Beispiel zeigt, wo die Angabe hingehört: **Board-Header** 
 **Firmware** (was das Gerät tut). Präfix in allen Beispielen: `HWP`. Begriffe und Attribute: [README](README.md).
 
 Grundregel: Die Applikation fragt nie nach einer HW-ID, sondern nur nach einer Fähigkeit oder einem Wert.
-Ein neues Board braucht dann nur seinen Header-Block. Alles hier läuft mit ETS-Bordmitteln, ohne Script.
+Ein neues Board braucht dann nur seinen Header-Block. Alles hier läuft mit ETS-Bordmitteln, ohne Script; nur die
+GPIO-Konfliktprüfung (Fall 16) ist eine erzeugte ParameterCalculation.
 
 **Einstieg:** Fall 1 und 2 reichen für die meisten Applikationen. Die übrigen Fälle sind optional.
 **Alle Fälle in einer knxprod:** [Demo](../examples/HardwareProfileDemo/README.md) (mit Kontexthilfe je Seite).
@@ -267,6 +268,63 @@ ausgeblendet ist, ist nicht geprüft: nach dem Wechsel die Verknüpfungen kontro
 
 `Build-HardwareProfile.ps1 -Check` (Exit-Code 1 = erzeugte Dateien veraltet), `-ListIds` (Header-Regeln, doppelte IDs),
 `-NextId 0x25` (nächste freie ID). Die GitHub Action des Repos führt `-ListIds` und `-Check` bei jedem Commit aus.
+
+## 16. Port-Auswahl und GPIO-Konflikte
+
+*Beispiel: zwei Ausgänge wählen je einen Port der Hardware oder „Manuell“ mit einem GPIO; ein fest verdrahtetes Relais
+belegt seinen Pin immer. Zwei Einstellungen auf demselben GPIO zeigen in ETS je eine Fehlermeldung, die Firmware löst
+dieselben Werte mit denselben Regeln auf.* Hier ist ein Script nötig: eine reine `choose`-Lösung bräuchte je Nutzung eine `<when>` für jede
+Kombination aus Board und den Werten aller anderen Nutzungen.
+
+```c
+// Board-Header
+#define HW_PORT_COUNT 2
+#define HW_PORT_1_GPIO 4
+#define HW_PORT_2_GPIO 6
+#define HW_RELAY_COUNT 1          // Relais 1 fest auf GPIO 12
+#define HW_RELAY_1_GPIO 12
+```
+```xml
+<!-- Manifest: Port-Werte einmal (ETS-Prüfung und Firmware-Header), dann die Prüfung -->
+<HardwareProfile ... portManualValue="10" portNoneValue="15">
+  <Ports board="*" excludeRelayPins="true" max="10" />
+  <Conflicts output="src/MyApp.conflicts.gen.xml" number="900">
+    <Param name="Outputs" ref="%AID%_P-%TT%00023_R-%TT%0002301" />
+    <Param name="Signal1" ref="%AID%_P-%TT%00024_R-%TT%0002401" />
+    <Use name="Out1Data" text="Ausgang 1 Daten" when="Outputs >= 1"
+         port="%AID%_UP-%TT%{{D5 (1000 + $b.Slot)}}_R-%TT%{{D5 (1000 + $b.Slot)}}01">
+      <Manual when="Signal1 in 1 2" ref="%AID%_P-%TT%00027_R-%TT%0002701" />   <!-- SPI: MOSI-GPIO -->
+      <Manual ref="%AID%_P-%TT%00026_R-%TT%0002601" />                         <!-- sonst Daten-GPIO -->
+    </Use>
+    <Use name="Out1Clock" text="Ausgang 1 Takt" when="Outputs >= 1 and Signal1 in 1 2" port="...">
+      <Manual ref="%AID%_P-%TT%00028_R-%TT%0002801" />
+    </Use>
+    <Use name="Relay1" text="Relais 1" wiredRelay="1" port="..." />   <!-- Port nur auf Boards ohne festes Relais 1 -->
+  </Conflicts>
+</HardwareProfile>
+```
+```xml
+<!-- Applikations-XML: die Teile in das eigene Modul (%TT%) einbinden -->
+<op:include href="MyApp.conflicts.gen.xml" xpath="//ApplicationProgram/Static/ParameterTypes/ParameterType" />  <!-- in ParameterTypes -->
+<op:include href="MyApp.conflicts.gen.xml" xpath="//Block[@name='Parameters']/*" />                            <!-- in Parameters -->
+<op:include href="MyApp.conflicts.gen.xml" xpath="//Block[@name='ParameterRefs']/*" />                         <!-- in ParameterRefs -->
+<op:include href="MyApp.conflicts.gen.xml" xpath="//Block[@name='Calculation']/*" />                           <!-- in ParameterCalculations -->
+<!-- unter der Port-Auswahl, auf jeder Seite: -->
+<op:include href="MyApp.conflicts.gen.xml" xpath="//Block[@name='Conflict_Out1Data']/*" />
+<!-- in einer Kanalvorlage (%C%): <ChannelBlock name="OutData" text="Ausgang %C% Daten" uses="Out1Data Out2Data" /> -->
+<op:include href="MyApp.conflicts.gen.xml" xpath="//Block[@name='ConflictChannel_OutData']/*" />
+```
+```cpp
+// Firmware: dieselben Werte (HardwareProfileData.h), Auswahl als Parameter
+uint8_t data = HardwareProfile::signalGpio(ParamHWP_HardwareSelect, portByte, manualGpio);
+uint8_t relay = HardwareProfile::relaySignalGpio(ParamHWP_HardwareSelect, 0, relayPortByte, relayManualGpio);
+if (data == HardwareProfile::GPIO_NONE) { /* kein GPIO: andere oder keine Hardware gewählt, kein Port, nicht gesetzt */ }
+```
+
+- Die Port-Parameter je Board (Union auf einem Byte, Vorlagen `PortListTypes.xml` und `BoardParameter.xml`) bleiben, wie
+  sie sind; die Prüfung liest sie nur. Ohne gewählte Hardware prüft sie nicht.
+- Die Fehlermeldungen sind Parameter ohne Gerätespeicher; die Firmware sieht davon nichts.
+- Beispiel mit Kontexthilfe: Demo-Seite „7 GPIO-Konflikte“.
 
 ---
 

@@ -200,6 +200,8 @@ Eigene Fähigkeiten der Applikation (`<Capability>`) trägt der Entwickler danac
 | `<InfoImage style define default module version width urlFont supersample urlColor logo badge thirdPartyWhen>` | Gerätekarte der Hardware-Seite, siehe [Hardware-Seite](#hardware-seite-gerätekarte) |
 | `<Page text icon help intro queryTitle query infoDefault unselectedInfo unselectedText updateInfo firmware changeInfo features dev>` | Hardware-Seite als OpenKNX-Seite, siehe [Hardware-Seite](#hardware-seite-gerätekarte) |
 | `<Notice when title><Text>…</Text>…</Notice>` | Hinweis-Kasten für Boards mit der Fähigkeit `when`, siehe [Hardware-Seite](#hardware-seite-gerätekarte) |
+| `portManualValue`, `portNoneValue` (Wurzel) | Werte der Port-Auswahlen der Applikation: 0..n-1 = Port n des Boards, `portManualValue` (0..254) = manueller GPIO, `portNoneValue` (0..255) = kein Port, jeder andere Wert (z. B. nie geschrieben 255) = kein GPIO. Nur zusammen, verschieden. Einmal angegeben, gilt es für die Konfliktprüfung (`<Conflicts>`) und den Firmware-Header (`signalGpio`, siehe [Port-Auswahl in der Firmware](#port-auswahl-in-der-firmware)). Ein angebotener Port auf einem der beiden Werte bricht den Lauf ab |
+| `<Conflicts output number value error>` | GPIO-Konfliktprüfung in ETS, siehe [GPIO-Konflikte](#gpio-konflikte-conflicts) |
 
 ## Hardware-Seite (Gerätekarte)
 
@@ -355,6 +357,83 @@ beschriebenen Ports, z. B. `<Ports board="*" excludeRelayPins="true" />`.
 
 `max="n"`: höchste Portnummer, die die knxprod speichern kann (z. B. weil Wert n eine andere Bedeutung hat). Beschreibt ein
 passendes Board mehr Ports, bricht der Lauf ab, statt einen Port auf einen belegten Wert zu legen.
+
+## Port-Auswahl in der Firmware
+
+Mit `portManualValue` / `portNoneValue` an der Wurzel schreibt der Generator in den Firmware-Header (`<Output header>`,
+Namensraum `HardwareProfile`, nach `#include "HardwareConfig/Helpers/HardwarePorts.h"`):
+
+| Name | Inhalt |
+|---|---|
+| `PORT_MANUAL`, `PORT_NONE` | die Werte aus dem Manifest |
+| `GPIO_NONE` | 255 (kein GPIO) |
+| `selectionIsOwn(selected)` | `selected` ist dieses Board (nie bei „nicht gewählt“) |
+| `signalGpio(selected, portValue, manualGpio)` | `PORT_MANUAL` → `manualGpio`, ein Port des Boards → `hwPortGpio()`, sonst `GPIO_NONE` |
+| `relaySignalGpio(selected, relayIndex, portValue, manualGpio)` | `relayIndex` < `hwRelayCount()` (fest verdrahtet) → `hwRelayGpio()`, das Port-Byte zählt nicht; sonst `signalGpio()` |
+
+`selected` ist die Hardware-Auswahl (`Param<Präfix>_HardwareSelect`). Ist sie nicht dieses Board, liefern beide Funktionen
+`GPIO_NONE`, auch für ein fest verdrahtetes Relais: ETS schreibt die Port-Bytes nur für die gewählte Hardware, ein nie
+geschriebenes Byte liest 0 = Port 1. Die Prüfung steckt deshalb in der Funktion und kann beim Aufruf nicht fehlen.
+`PORT_MANUAL` und `PORT_NONE` werden vor dem Port geprüft: Beschreibt ein Board einen Port auf einem der beiden Werte, nutzt
+die Firmware ihn nie. Bietet ETS einen solchen Port an (`<Ports>`), bricht der Generator ab.
+Alle Funktionen sind `constexpr` (C++11). Ohne die beiden Attribute bleibt der Header, wie er ist.
+
+## GPIO-Konflikte (`<Conflicts>`)
+
+Optional: Belegen zwei Einstellungen der Applikation denselben GPIO der gewählten Hardware, zeigt ETS unter jeder eine
+Fehlermeldung. Eine ParameterCalculation (JavaScript, ES3) läuft über eine erzeugte Tabelle: jede aktive Nutzung ergibt
+einen GPIO (Port-Wert über die Port-Tabelle des gewählten Boards, „manuell“ über den GPIO-Parameter, fest verdrahtetes
+Relais über `HW_RELAY_<n>_GPIO`); zwei Nutzungen mit demselben GPIO bekommen beide ihr Flag. Ohne gewählte (oder bei
+unbekannter) Hardware sind alle Flags 0. Die Flags sind Parameter ohne Gerätespeicher. Die Prüfung liest nur vorhandene
+Parameter, deren IDs bleiben. Ohne `<Conflicts>` ändert sich keine Ausgabe.
+
+```xml
+<HardwareProfile ... portManualValue="10" portNoneValue="15">
+  <Conflicts output="src/MyApp.conflicts.gen.xml" number="900">
+    <Param name="Strips" ref="%AID%_UP-%TT%00020_R-%TT%0002001" />
+    <Param name="Type1" ref="%AID%_UP-%TT%91030_R-%TT%9103001" />
+    <Use name="Strip1Data" text="Streifen 1 Daten" when="Strips >= 1"
+         port="%AID%_UP-%TT%01{{D3 (900 + $b.Slot)}}_R-%TT%01{{D3 (900 + $b.Slot)}}01">
+      <Manual when="Type1 in 5 6 21 22 25" ref="%AID%_UP-%TT%91035_R-%TT%9103501" />
+      <Manual ref="%AID%_UP-%TT%91033_R-%TT%9103301" />
+    </Use>
+    <Use name="Relay1" text="Relais 1" wiredRelay="1" when="Relays >= 1" port="..." />
+  </Conflicts>
+</HardwareProfile>
+```
+
+| Element / Attribut | Bedeutung |
+|---|---|
+| `<Conflicts output>` | Datei mit den Teilen, die die Applikation in **ein** eigenes Modul einbindet (`%TT%` dieses Moduls) |
+| `number` | erste Parameter-Nummer der Flags (`%AID%_P-%TT%<number + i>`, i = Position der `<Use>`; mit `<ChannelBlock>` siehe dort) und Nummer der Berechnung (`%AID%_PC-%TT%<number>`). **Die Applikation hält `number` bis `number` + Anzahl der Flags (mit `<ChannelBlock>`: bis `number` + 10 × Blöcke + 9) und `PC-%TT%<number>` im einbindenden Modul frei.** Als Hinweis sucht der Generator die Nummern in den XML-Dateien neben `output` (ohne seine eigenen Ausgaben, frühere Teile-Dateien und `*.debug.xml`) und warnt mit dem Dateinamen; er vergleicht `%TT%` nicht (eine Datei eines anderen Moduls kann warnen) und sieht keine IDs mit `%C%` oder `{{ }}` und keine Dateien in anderen Ordnern |
+| `value` | Standard der `<Use value>`: `port` (Standard) oder `gpio` |
+| `error` | Fehlertext, `{text}` = Text der Nutzung (höchstens 255 Zeichen); Standard „GPIO-Konflikt: {text} nutzt denselben GPIO wie …“ |
+| `<Param name ref>` | Eingang für Bedingungen: ParamRefId (ohne `{{ }}`) und ein Name |
+| `<Use name text>` | eine Nutzung eines GPIO, `name` alphanumerisch und eindeutig (Flag `Conflict<name>`, Block `Conflict_<name>`) |
+| `<Use when>` | Bedingung, unter der die Nutzung aktiv ist: `<Param> <op> <Zahl>` mit `==` `!=` `<` `<=` `>` `>=` (in XML `&lt;`) oder `<Param> in <Zahl> <Zahl> …`, verbunden mit `and` / `or` (`and` bindet stärker, keine Klammern; `and`, `or`, `in` klein geschrieben; Zahlen 32 Bit); ohne `when` immer aktiv |
+| `<Use port>` | ParamRefId der Auswahl je Board; `{{ }}` sind Ausdrücke wie in Vorlagen mit `$b` (Board), `$tt` (ModuleType des Hardware-Moduls, zweistellig, für die GPIO-Rollen), `$Boards`, `$M`. Ergibt der Ausdruck für alle Boards dieselbe ID (z. B. ohne `{{ }}`), ist es ein Parameter für alle Boards |
+| `<Use value>` | `port`: Port-Wert (0..n-1 = Port n des Boards aus seinen angebotenen Ports, `portManualValue`, `portNoneValue`, jeder andere Wert = kein GPIO); `gpio`: der Wert ist der GPIO (0..254, 255 = keiner), z. B. eine GPIO-Rolle |
+| `<Use wiredRelay="n">` | auf Boards mit mindestens n fest verdrahteten Relais (`HW_RELAY_<n>_GPIO`) ist die Nutzung dieses Relais: GPIO fest, **immer** belegt (auch ohne `when`), kein Port-Parameter; auf den übrigen Boards gilt `port` (fehlt `port`, ist sie dort nicht belegt). Hat ein Board mehr feste Relais, als `wiredRelay` nennt, gibt es eine Warnung |
+| `<Manual ref when>` | manueller GPIO bei `portManualValue`: der erste `<Manual>`, dessen `when` gilt; ein `<Manual>` ohne `when` ist der letzte. Wert 255 = kein GPIO. Braucht `value="port"` und `portManualValue` |
+| `<ChannelBlock name text uses>` | ein UI-Block `ConflictChannel_<name>` für eine Kanalvorlage des OpenKNXproducers (`%C%` = Kanal 1..9): die n-te Nutzung in `uses` ist Kanal n; `text` (mit `%C%`) ersetzt `{text}` im Fehlertext der Nutzungen; die Nutzungen eines Blocks brauchen denselben `error` (sonst Abbruch). Der OpenKNXproducer ersetzt `%C%` im eingebundenen Inhalt, nicht im `xpath` eines `op:include` (`Conflict_Strip%C%Data` fände nichts, ohne Meldung). Nummern dann: `number` ein Vielfaches von 10, Nutzungen außerhalb eines Kanalblocks `number` + 0..9 (höchstens 10), Kanalblock k Nutzung n `number` + 10 k + n (höchstens 9 Blöcke); der Block nennt das Flag `%AID%_P-%TT%<(number + 10 k) / 10>%C%_R-…` |
+
+Erzeugte Teile (`output`): ParameterType (`//ApplicationProgram/Static/ParameterTypes/ParameterType`), Blöcke `Parameters`,
+`ParameterRefs`, `Calculation` (in `<ParameterCalculations>`) und je Nutzung `Conflict_<name>` (unter der Auswahl, auf
+jeder Seite): der Flag-Parameter (`Access="None"`, damit das `choose` aktiv ist) und ein Fehler-Separator bei Flag 1.
+Die Funktion `<Präfix>_conflictCheck` und die Tabellen stehen im erzeugten Script (`<Output script>`, nötig wie `share`).
+Eingänge liest das Script über ihren Alias (`Sel`, `P_<Param>`, `M<i>_<k>`, `U<i>B<Board-Nummer>` bzw. `U<i>` für einen Parameter
+aller Boards), die Flags schreibt es
+mit Punkt-Namen (`output.F_<name>`).
+
+`name` von `<Param>` und `<Use>` höchstens 48 Zeichen (Alias `P_`/`F_` + Name, ETS: 50). Eine Teile-Datei eines früheren Laufs
+(Markierungszeile) in einem Ordner der Ausgaben, die nicht mehr `output` ist, meldet der Generator als Warnung („delete it“);
+er löscht sie nicht, `-Check` zählt sie als nicht aktuell.
+
+Grenzen: Nutzungen eines Boards ohne den Port-Parameter (Board nicht in der Union) brechen beim OpenKNXproducer ab, nicht
+im Generator. Die Port-Tabelle enthält die angebotenen Ports (`<Ports use>`, `excludeRelayPins`); die Firmware
+(`hwPortGpio`) kennt alle beschriebenen, ETS speichert aber nur angebotene. Feste Relais ohne `<Use wiredRelay>` zählen
+nicht als belegt. Jede Nutzung zählt für sich: sie belegt ihren GPIO, auch wenn die Firmware den Kanal wegen einer anderen
+Einstellung nicht startet (z. B. ein Takt ohne Daten-Port). Die ETS selbst (Windows-JScript) ist nicht getestet, nur der OpenKNX-Viewer und Node.js.
 
 ## Relais (`HW_RELAY_*` im Board-Header)
 
