@@ -117,6 +117,9 @@ flowchart LR
 
 ## Ausgabe
 
+`--help` (auch `-h`, `-Help`) zeigt Aufruf, Optionen und Beispiele im Layout der OpenKNX-Build-Skripte; `Get-Help
+Build-HardwareProfile.ps1 -Detailed` die volle Beschreibung.
+
 Während des Laufs zeigt eine Fortschrittszeile, was gerade passiert (`Env 12/44`, `Board 12/44`, `QR-Bild 1/2`, `erzeugen <Datei>`, `vergleichen <Datei>`); mit `-Detailed` und bei umgeleiteter Ausgabe (CI, Log-Datei) entfällt sie.
 
 Danach: je Board eine Zeile `OK 0x<HW-ID>  <Name>` (nach HW-ID sortiert), dann eine Zusammenfassung, z. B.

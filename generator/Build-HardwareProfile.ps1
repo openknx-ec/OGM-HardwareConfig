@@ -137,9 +137,56 @@ $MAX_SWITCHES = 8               # on/off parameters of switch="true" capabilitie
 # ------------------------------------------------------------------------------------------------
 # compact output (default of a generation run): steps and per-output lines only with -Detailed; warnings and errors
 # always; an error also shows the last step as context
+# @brief OpenKNX logo with a title (same look as the OpenKNX build scripts); the glyphs are built at run time, the file stays ASCII
+function Show-OpenKNXLogo([string]$Text) {
+  $box = [char]::ConvertFromUtf32(0x25A0)
+  $line = [char]::ConvertFromUtf32(0x252C) + ([string][char]::ConvertFromUtf32(0x2500) * 4) + [char]::ConvertFromUtf32(0x2534)
+  Write-Host ""
+  Write-Host "Open " -NoNewline
+  Write-Host $box -ForegroundColor Green
+  Write-Host ("{0}  {1}" -f $line, $Text) -ForegroundColor Green
+  Write-Host $box -NoNewline -ForegroundColor Green
+  Write-Host " KNX"
+  Write-Host ""
+}
+# @brief Help in the layout of the OpenKNX build scripts; Get-Help shows the full description
+function Show-Help {
+  Show-OpenKNXLogo ("Build-HardwareProfile " + $SCRIPT_VERSION)
+  Write-Host "USAGE:" -ForegroundColor Yellow
+  Write-Host "  pwsh lib/OGM-HardwareConfig/generator/Build-HardwareProfile.ps1 [-Manifest <file>] [-Check] [-Detailed] [-DryRun]"
+  Write-Host "  pwsh lib/OGM-HardwareConfig/generator/Build-HardwareProfile.ps1 -ListIds [-Markdown] | -NextId <group> | -Init"
+  Write-Host ""
+  Write-Host "OPTIONS:" -ForegroundColor Yellow
+  Write-Host "  -Manifest <file>    Manifest of the application (default: HardwareProfile.xml in the current folder)"
+  Write-Host "  -Check              Compare every output with the file on disk, write nothing; exit 1 when one is out of date (CI)"
+  Write-Host "  -Detailed           Full log: manifest, boards with capabilities and values, every output (default: summary)"
+  Write-Host "  -DryRun             Evaluate and print, write no file"
+  Write-Host "  -ListIds            Every DEVICE_HW_ID of OGM-HardwareConfig; stops on a duplicate ID (no manifest needed)"
+  Write-Host "  -Markdown           With -ListIds: print a Markdown table"
+  Write-Host "  -NextId <group>     Next free DEVICE_HW_ID of a group (0x21 = 0x2100..0x21FF, 0x213 = 0x2130..0x213F)"
+  Write-Host "  -Init               Create the manifest for an application without one (boards of the release_* envs)"
+  Write-Host "  -Compiler <path>    C++ compiler used as preprocessor (default: PlatformIO toolchain of the board MCU)"
+  Write-Host "  -HardwareConfigInclude <dir>  Include folder of OGM-HardwareConfig (default: next to this script)"
+  Write-Host "  -Help, -h, --help   Show this help (Get-Help Build-HardwareProfile.ps1 -Detailed: full description)"
+  Write-Host ""
+  Write-Host "EXAMPLES:" -ForegroundColor Yellow
+  $examples = @(
+    @("Build-HardwareProfile.ps1", "reads ./HardwareProfile.xml and writes the files named in it"),
+    @("Build-HardwareProfile.ps1 -Check", "CI: exit 1 when a generated file is out of date"),
+    @("Build-HardwareProfile.ps1 -Detailed", "full log"),
+    @("Build-HardwareProfile.ps1 -ListIds -Markdown", "hardware ID table of all boards"),
+    @("Build-HardwareProfile.ps1 -NextId 0x25", "next free DEVICE_HW_ID in 0x2500..0x25FF")
+  )
+  $width = ($examples | ForEach-Object { $_[0].Length } | Measure-Object -Maximum).Maximum
+  foreach ($e in $examples) {
+    Write-Host ("  " + $e[0].PadRight($width)) -NoNewline -ForegroundColor White
+    Write-Host ("  # " + $e[1]) -ForegroundColor DarkGray
+  }
+  Write-Host ""
+}
 # help: -Help, -? (PowerShell) and the usual --help / -h / /? (they arrive as the positional Manifest)
 if ($Help -or @("--help", "-help", "-h", "/?", "/h", "help", "?") -contains $Manifest) {
-  Get-Help -Name $PSCommandPath -Detailed
+  Show-Help
   exit 0
 }
 $script:Compact = -not ($Detailed -or $ListIds -or $NextId -or $Init -or $DryRun)
@@ -2577,7 +2624,7 @@ function Invoke-Init {
 # Main
 # ------------------------------------------------------------------------------------------------
 Write-Detail ""
-if (-not $script:Compact) { Write-Host "  OpenKNX Build-HardwareProfile $SCRIPT_VERSION" -ForegroundColor Cyan }
+if (-not $script:Compact) { Show-OpenKNXLogo ("Build-HardwareProfile " + $SCRIPT_VERSION) }
 Write-Detail ""
 
 try {
@@ -2843,7 +2890,7 @@ try {
     if ($envCount -gt 0) { $parts += ("{0} Envs" -f $envCount) }
     $parts += ("{0} Boards" -f $boards.Count)
     if ($script:CheckMode) {
-      if ($script:WrittenCount -eq 0) { Write-Host ("Hardware: {0}, Check: aktuell" -f ($parts -join ", ")); exit 0 }
+      if ($script:WrittenCount -eq 0) { Write-Host ("Hardware: {0}, Check: aktuell" -f ($parts -join ", ")) -ForegroundColor Green; exit 0 }
       Write-Host ("Hardware: {0}, Check: {1} Datei(en) nicht aktuell: {2} - Generator laufen lassen" -f ($parts -join ", "), $script:WrittenCount, ($script:WrittenFiles -join ", ")) -ForegroundColor Red
       exit 1
     }
@@ -2851,7 +2898,7 @@ try {
     elseif ($script:WrittenCount -eq 1) { $state = "1 Datei geschrieben" }
     else { $state = "{0} Dateien geschrieben" -f $script:WrittenCount }
     if ($script:WrittenCount -gt 0 -and $script:WrittenCount -le 3) { $state += " (" + ($script:WrittenFiles -join ", ") + ")" }
-    Write-Host ("Hardware: {0}, {1}" -f ($parts -join ", "), $state)
+    Write-Host ("Hardware: {0}, {1}" -f ($parts -join ", "), $state) -ForegroundColor Green
     if ($script:WarningCount -gt 0) { Write-Host ("  {0} warning(s)" -f $script:WarningCount) -ForegroundColor Yellow }
   }
   else {
