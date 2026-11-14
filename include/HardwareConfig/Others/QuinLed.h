@@ -136,6 +136,7 @@
 
 #ifdef DEVICE_QUINLED_DIG_NEXT2
     #define DEVICE_HW_ID 0x2140
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74AHCT125
     #define DEVICE_ID "QuinLED-Dig-Next-2"
     #define DEVICE_NAME "QuinLED Dig-Next 2" // Flash: 8 MB, PSRAM: 2MB
 
@@ -173,6 +174,7 @@
 
 #if defined(DEVICE_QUINLED_DIG_UNO_V3_WIFI)
     #define DEVICE_HW_ID 0x2110
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74HCT125
     #define DEVICE_ID "QuinLED-Dig-Uno-V3-WiFi"
     #define DEVICE_NAME "QuinLED Dig-Uno V3 (WiFi)" // Flash: 4 MB, PSRAM: 0 MB
 
@@ -184,6 +186,7 @@
     #define QUINLED_HAS_AUDIO_INPUT 0
 #elif defined(DEVICE_QUINLED_DIG_UNO_V3_ETHERNET)
     #define DEVICE_HW_ID 0x2111
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74HCT125
     #define DEVICE_ID "QuinLED-Dig-Uno-V3-Ethernet"
     #define DEVICE_NAME "QuinLED Dig-Uno V3 (Ethernet)" // Flash: 4 MB, PSRAM: 0 MB
 
@@ -450,6 +453,7 @@
 // Ethernet PHY: WLED wled00/network.cpp, WLED_ETH_QUINLED_V4.
 #if defined(DEVICE_QUINLED_DIG_UNO_V4_WIFI)
     #define DEVICE_HW_ID 0x2113
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74HCT125
     #define DEVICE_ID "QuinLED-Dig-Uno-V4-WiFi"
     #define DEVICE_NAME "QuinLED Dig-Uno V4 (WiFi)" // Flash: 8 MB, PSRAM: 2 MB
     #ifndef KNX_IP_WIFI
@@ -458,6 +462,7 @@
     #define QUINLED_HAS_ETHERNET 0
 #elif defined(DEVICE_QUINLED_DIG_UNO_V4_ETHERNET)
     #define DEVICE_HW_ID 0x2114
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74HCT125
     #define DEVICE_ID "QuinLED-Dig-Uno-V4-Ethernet"
     #define DEVICE_NAME "QuinLED Dig-Uno V4 (Ethernet)" // Flash: 8 MB, PSRAM: 2 MB
     #ifndef KNX_IP_LAN

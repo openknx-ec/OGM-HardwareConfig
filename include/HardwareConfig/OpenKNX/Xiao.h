@@ -28,6 +28,14 @@
  *
  */
 
+// HW_LEVELSHIFTER in a board block: level shifter of the LED data lines; the numbers equal OFM-NeoPixel
+// LevelShifterType (it uses these names); a board without HW_LEVELSHIFTER has none. Also used by QuinLed.h.
+#define HW_LEVELSHIFTER_NONE 0
+#define HW_LEVELSHIFTER_TXS0108E 1    // TI TXS0108E bidirectional auto-direction
+#define HW_LEVELSHIFTER_SN74HCT125 2  // TI SN74HCT125 quad buffer, OE = GND
+#define HW_LEVELSHIFTER_SN74AHCT125 3 // TI SN74AHCT125 quad buffer (AHCT)
+#define HW_LEVELSHIFTER_SN74LV8T245 4 // TI SN74LV8T245 octal buffer, DIR = H, OE = GND
+
 /**
  * Section: Device configurations / use cases ( Device is a full defined hardware has documentation in openknx wiki)
  * OpenKNXiao RP2040 / SAMD / ESP / ESP32-S2
@@ -98,6 +106,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V1
     #define DEVICE_HW_ID 0x1300
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-2040"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix RP2040"
     #define OKNXHW_OPENKNXIAO_RP2040
@@ -113,6 +122,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://...
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2350_V1
     #define DEVICE_HW_ID 0x1310
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-2350"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix RP2350"
     #define OKNXHW_OPENKNXIAO_RP2350
@@ -126,6 +136,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V1
     #define DEVICE_HW_ID 0x1320
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32S3"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32S3"
     #define OKNXHW_OPENKNXIAO_ESP32S3
@@ -139,6 +150,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C3_V1
     #define DEVICE_HW_ID 0x1350
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32C3"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32C3"
     #define OKNXHW_OPENKNXIAO_ESP32C3
@@ -151,6 +163,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C5_V1
     #define DEVICE_HW_ID 0x1340
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32C5"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32C5"
     #define OKNXHW_OPENKNXIAO_ESP32C5
@@ -163,6 +176,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C6_V1
     #define DEVICE_HW_ID 0x1330
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_TXS0108E
     #define DEVICE_ID PREFIX_ID "V1-KNeoPix-ESP32C6"
     #define DEVICE_NAME PREFIX_NAME "V1 KNeoPix ESP32C6"
     #define OKNXHW_OPENKNXIAO_ESP32C6
@@ -181,6 +195,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2040_V15
     #define DEVICE_HW_ID 0x1302
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-2040"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix RP2040"
     #define OKNXHW_OPENKNXIAO_RP2040
@@ -196,6 +211,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // https://github.com/OpenKNX/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_RP2350_V15
     #define DEVICE_HW_ID 0x1312
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-2350"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix RP2350"
     #define OKNXHW_OPENKNXIAO_RP2350
@@ -209,6 +225,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32S3_V15
     #define DEVICE_HW_ID 0x1322
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32S3"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32S3"
     #define OKNXHW_OPENKNXIAO_ESP32S3
@@ -222,6 +239,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C3_V15
     #define DEVICE_HW_ID 0x1352
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32C3"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32C3"
     #define OKNXHW_OPENKNXIAO_ESP32C3
@@ -234,6 +252,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C5_V15
     #define DEVICE_HW_ID 0x1342
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32C5"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32C5"
     #define OKNXHW_OPENKNXIAO_ESP32C5
@@ -246,6 +265,7 @@ Main Group 0x3 = Community Devices (0x3000-0x3FFF)
 // http://www.openknx.de/OpenKNX-KNeoPiX
 #ifdef OKNXHW_OPENKNXIAO_KNEOPIX_ESP32C6_V15
     #define DEVICE_HW_ID 0x1332
+    #define HW_LEVELSHIFTER HW_LEVELSHIFTER_SN74LV8T245
     #define DEVICE_ID PREFIX_ID "V15-KNeoPix-ESP32C6"
     #define DEVICE_NAME PREFIX_NAME "V1.5 KNeoPix ESP32C6"
     #define OKNXHW_OPENKNXIAO_ESP32C6
