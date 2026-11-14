@@ -190,6 +190,7 @@
     #define GLEDOPTO_ETHERNET_MDIO_GPIO 33
     #define GLEDOPTO_ETHERNET_POWER_GPIO 5
     #define GLEDOPTO_ETHERNET_CLK_MODE ETH_CLOCK_GPIO0_IN
+    #define GLEDOPTO_ETHERNET_CLK_IN_GPIO 0 // RMII clock input of ETH_CLOCK_GPIO0_IN
 
     #define DEVICE_HW_ID 0x2002
     #define DEVICE_THIRD_PARTY // third-party hardware, no OpenKNX support
