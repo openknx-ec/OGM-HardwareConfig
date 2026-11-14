@@ -128,6 +128,23 @@ $MAX_VALUES = 4                 # answer 1 status + 2 HW-ID + 4 caps + 4 values 
 $MAX_PORTS = 64                 # HW_PORT_<n>_GPIO read per board (n = 1..64); HW_PORTS_MAX of include/HardwareConfig/Helpers/HardwarePorts.h wins
 $MAX_RELAYS = 8                 # HW_RELAY_<n>_GPIO read per board (n = 1..8)
 $MAX_SWITCHES = 8               # on/off parameters of switch="true" capabilities, one bit each in one byte
+# <Conflicts reserved="true">: GPIOs every board reserves without a manifest entry, in ETS and in HardwareProfile::isReservedGpio.
+# Pins OGM-Common drives itself when the macro is defined (Hardware.cpp, Common.cpp, Led/Manager.cpp, TimerInterrupt.cpp):
+$AUTO_RESERVED = @("PROG_BUTTON_PIN", "PROG_LED_PIN", "INFO_LED_PIN", "INFO1_LED_PIN", "INFO2_LED_PIN", "INFO3_LED_PIN",
+                   "OPENKNX_SERIALLED_PIN", "FUNC1_BUTTON_PIN", "FUNC2_BUTTON_PIN", "FUNC3_BUTTON_PIN", "SAVE_INTERRUPT_PIN")
+# the KNX UART only in a TP build: OGM-Common Hardware.cpp uses it under KNX_HAS_TP, knx config.h sets USE_TP for these masks
+$TP_RESERVED = @("KNX_UART_RX_PIN", "KNX_UART_TX_PIN")
+$TP_MASKS = @(0x07B0, 0x091A, 0x2920)
+# flash / PSRAM bus of the chip (framework-arduinoespressif32-libs 5.5.5, soc/spi_pins.h MSPI_IOMUX_PIN_NUM_*, sdkconfig.h):
+# Base = CLK MISO MOSI HD WP CS0; Cs1 = PSRAM chip select with CONFIG_SPIRAM and BOARD_HAS_PSRAM (esp32-hal-psram.h clears
+# CONFIG_SPIRAM without it); Octal = D4..D7 DQS with CONFIG_SPIRAM_MODE_OCT / CONFIG_ESPTOOLPY_OCT_FLASH (memory type *_opi)
+$CHIP_RESERVED = @{
+  "ESP32"    = @{ Base = @(6, 7, 8, 9, 10, 11); Cs1 = @(); Octal = @() }
+  "ESP32-S3" = @{ Base = @(27, 28, 29, 30, 31, 32); Cs1 = @(26); Octal = @(33, 34, 35, 36, 37) }
+  "ESP32-C3" = @{ Base = @(12, 13, 14, 15, 16, 17); Cs1 = @(); Octal = @() }
+  "ESP32-C5" = @{ Base = @(16, 17, 18, 20, 21, 22); Cs1 = @(15); Octal = @() }
+  "ESP32-C6" = @{ Base = @(24, 25, 26, 28, 29, 30); Cs1 = @(); Octal = @() }
+}
 
 # helpers (dot-sourced): template engine, QR code encoder, PNG reader/writer
 . ([System.IO.Path]::Combine($PSScriptRoot, "helpers", "TemplateEngine.ps1"))
@@ -445,6 +462,13 @@ function ConvertFrom-CString([string]$Text) {
 }
 
 # 0x2120 / (16) / 4u / (uint8_t)16 -> int ; $null when not a plain integer
+# @brief true for a negative integer literal such as (-1): a pin macro that marks "not present"
+function Test-CNegative([string]$Text) {
+  $t = $Text.Trim()
+  while ($t -match '^\((.*)\)$') { $t = $Matches[1].Trim() }
+  return ($t -match '^-\s*(0[xX][0-9a-fA-F]+|\d+)[uUlL]*$')
+}
+
 function ConvertFrom-CInteger([string]$Text) {
   $t = $Text.Trim()
   $t = $t -replace '^\(\s*(u?int\d+_t|unsigned|int|uint8_t)\s*\)', ''
@@ -1011,7 +1035,7 @@ function ConvertFrom-ConflictCondition([string]$Text, [hashtable]$Params, [strin
 #        wiredRelay error><Manual ref when/></Use></Conflicts>; board-dependent checks follow in Resolve-Conflicts
 function Read-ConflictsNode($M, $Node, [string]$BaseDir) {
   $w = "<Conflicts>"
-  $allowed = @("output", "number", "value", "error")
+  $allowed = @("output", "number", "value", "error", "reserved", "reservedError", "tpError")
   foreach ($at in $Node.Attributes) { if ($allowed -cnotcontains $at.Name) { Stop-WithError ("{0}: attribute {1} is not supported (allowed: {2})" -f $w, $at.Name, ($allowed -join ", ")) } }
   if (-not $M.Outputs.ContainsKey("share") -or -not $M.Outputs.ContainsKey("script")) { Stop-WithError "<Conflicts> needs <Output share=... script=...> (the check function is part of the generated script)" }
   $out = "$($Node.GetAttribute('output'))"
@@ -1023,6 +1047,16 @@ function Read-ConflictsNode($M, $Node, [string]$BaseDir) {
   if ($cf.Value -ne "port" -and $cf.Value -ne "gpio") { Stop-WithError "<Conflicts>: value must be port or gpio" }
   $cf.Error = "$($Node.GetAttribute('error'))"
   if (-not $cf.Error) { $cf.Error = "GPIO-Konflikt: {text} nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." }
+  # reserved="true": a use on a GPIO the selected board uses itself gets flag 2 (reservedError); on a KNX UART pin of a board
+  # that has TP and IP firmware variants flag 3 (tpError, Information)
+  $rv = $Node.GetAttribute("reserved")
+  if ($rv -and $rv -ne "true" -and $rv -ne "false") { Stop-WithError "<Conflicts>: reserved must be true or false" }
+  $cf.Reserved = ($rv -eq "true")
+  $cf.ReservedError = $Node.GetAttribute("reservedError")
+  $cf.TpError = $Node.GetAttribute("tpError")
+  if (($cf.ReservedError -or $cf.TpError) -and -not $cf.Reserved) { Stop-WithError "<Conflicts>: reservedError / tpError need reserved=`"true`"" }
+  if (-not $cf.ReservedError) { $cf.ReservedError = [regex]::Unescape('GPIO-Konflikt: {text} nutzt einen GPIO, den die gew\u00E4hlte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet).') }
+  if (-not $cf.TpError) { $cf.TpError = [regex]::Unescape('Hinweis: {text} nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei.') }
   $params = @{}
   foreach ($pn in $Node.SelectNodes("Param")) {
     $pName = $pn.GetAttribute("name"); $pRef = $pn.GetAttribute("ref")
@@ -1063,6 +1097,10 @@ function Read-ConflictsNode($M, $Node, [string]$BaseDir) {
     $u.Error = "$($un.GetAttribute('error'))"; if (-not $u.Error) { $u.Error = $cf.Error }
     $u.ErrorText = $u.Error.Replace("{text}", $u.Text)
     if ($u.ErrorText.Length -gt 255) { Stop-WithError ("{0}: the error text has {1} characters, ETS shows at most 255" -f $uw, $u.ErrorText.Length) }
+    $u.ReservedText = $cf.ReservedError.Replace("{text}", $u.Text)
+    $u.TpText = $cf.TpError.Replace("{text}", $u.Text)
+    if ($cf.Reserved -and $u.ReservedText.Length -gt 255) { Stop-WithError ("{0}: the reservedError text has {1} characters, ETS shows at most 255" -f $uw, $u.ReservedText.Length) }
+    if ($cf.Reserved -and $u.TpText.Length -gt 255) { Stop-WithError ("{0}: the tpError text has {1} characters, ETS shows at most 255" -f $uw, $u.TpText.Length) }
     $defaultSeen = $false
     foreach ($mn in $un.SelectNodes("Manual")) {
       $mw = "$uw <Manual>"
@@ -1105,6 +1143,10 @@ function Read-ConflictsNode($M, $Node, [string]$BaseDir) {
     if ($templates.Count -gt 1) { Stop-WithError ("{0}: its uses have different error=... texts - give them one text (the block shows one message per channel)" -f $cw) }
     $ch.ErrorText = $templates[0].Replace("{text}", $cText)
     if ($ch.ErrorText.Length -gt 255) { Stop-WithError ("{0}: the error text has {1} characters, ETS shows at most 255" -f $cw, $ch.ErrorText.Length) }
+    $ch.ReservedText = $cf.ReservedError.Replace("{text}", $cText)
+    $ch.TpText = $cf.TpError.Replace("{text}", $cText)
+    if ($cf.Reserved -and $ch.ReservedText.Length -gt 255) { Stop-WithError ("{0}: the reservedError text has {1} characters, ETS shows at most 255" -f $cw, $ch.ReservedText.Length) }
+    if ($cf.Reserved -and $ch.TpText.Length -gt 255) { Stop-WithError ("{0}: the tpError text has {1} characters, ETS shows at most 255" -f $cw, $ch.TpText.Length) }
     $cf.Channels.Add($ch)
   }
   if ($cf.Channels.Count -gt 0) {
@@ -1174,26 +1216,44 @@ function ConvertFrom-PioFlagLine([string]$Line, [string]$EnvName = "", [switch]$
   return ,$defs
 }
 
-# @brief Short MCU name of an env (feature line): board_build.mcu, else build.mcu of the board manifest <id>.json (project
-#        boards folder, then the installed platforms); "" when unknown
+# @brief Board manifest <id>.json (project boards folder, then the installed platforms), read once per board:
+#        Mcu = build.mcu, Memory = build.arduino.memory_type or build.memory_type, Extra = build.extra_flags, Variant = build.variant
+function Get-PioBoardJson([string]$BoardId, [string]$ProjectDir) {
+  if (-not $BoardId) { return $null }
+  if ($null -eq $script:PioBoardJson) { $script:PioBoardJson = @{} }
+  if ($script:PioBoardJson.ContainsKey($BoardId)) { return $script:PioBoardJson[$BoardId] }
+  $info = $null
+  $dirs = @([System.IO.Path]::Combine($ProjectDir, "boards"))
+  $plat = [System.IO.Path]::Combine((Get-PioCoreDir), "platforms")
+  if (Test-Path -LiteralPath $plat) { $dirs += @(Get-ChildItem -LiteralPath $plat -Directory | Sort-Object Name | ForEach-Object { [System.IO.Path]::Combine($_.FullName, "boards") }) }
+  foreach ($d in $dirs) {
+    $f = [System.IO.Path]::Combine($d, $BoardId + ".json")
+    if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { continue }
+    try {
+      $bj = [System.IO.File]::ReadAllText($f) | ConvertFrom-Json
+      if (-not "$($bj.build.mcu)") { continue }
+      $memType = ""; if ($bj.build.arduino) { $memType = "$($bj.build.arduino.memory_type)" }
+      if (-not $memType) { $memType = "$($bj.build.memory_type)" }
+      $info = @{ Mcu = "$($bj.build.mcu)"; Memory = $memType; Extra = "$(@($bj.build.extra_flags) -join ' ')"; Variant = "$($bj.build.variant)" }
+      break
+    } catch { continue }
+  }
+  $script:PioBoardJson[$BoardId] = $info
+  return $info
+}
+
+# @brief Short MCU name of an env (feature line): board_build.mcu, else build.mcu of the board manifest; "" when unknown
 function Get-PioMcuName([string]$BoardId, [string]$Mcu, [string]$ProjectDir) {
   if (-not $Mcu -and $BoardId) {
-    if ($null -eq $script:PioBoardMcu) { $script:PioBoardMcu = @{} }
-    if (-not $script:PioBoardMcu.ContainsKey($BoardId)) {
-      $found = ""
-      $dirs = @([System.IO.Path]::Combine($ProjectDir, "boards"))
-      $plat = [System.IO.Path]::Combine((Get-PioCoreDir), "platforms")
-      if (Test-Path -LiteralPath $plat) { $dirs += @(Get-ChildItem -LiteralPath $plat -Directory | Sort-Object Name | ForEach-Object { [System.IO.Path]::Combine($_.FullName, "boards") }) }
-      foreach ($d in $dirs) {
-        $f = [System.IO.Path]::Combine($d, $BoardId + ".json")
-        if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { continue }
-        try { $found = "$(([System.IO.File]::ReadAllText($f) | ConvertFrom-Json).build.mcu)" } catch { $found = "" }
-        if ($found) { break }
+    $bj = Get-PioBoardJson $BoardId $ProjectDir
+    if ($bj) { $Mcu = $bj.Mcu }
+    else {
+      if ($null -eq $script:PioMcuWarned) { $script:PioMcuWarned = @{} }
+      if (-not $script:PioMcuWarned.ContainsKey($BoardId)) {
+        $script:PioMcuWarned[$BoardId] = $true
+        Write-Warn ("PlatformIO board {0}: no board manifest with build.mcu found - no MCU: default preprocessor, no framework defines" -f $BoardId)
       }
-      if (-not $found) { Write-Warn ("PlatformIO board {0}: no board manifest with build.mcu found - no MCU: default preprocessor, no framework defines" -f $BoardId) }
-      $script:PioBoardMcu[$BoardId] = $found
     }
-    $Mcu = $script:PioBoardMcu[$BoardId]
   }
   if (-not $Mcu) { return "" }
   $map = @{ rp2040 = "RP2040"; rp2350 = "RP2350"; esp32 = "ESP32"; esp32s2 = "ESP32-S2"; esp32s3 = "ESP32-S3"; esp32c3 = "ESP32-C3"
@@ -1248,10 +1308,16 @@ function Get-PlatformIOBoards($M, [string]$EnvPattern, [string]$ProjectDir, [str
     Write-Activity ("Env {0}/{1}  {2}" -f $envIndex, $envTotal, $envName)
     $excluded = (@($Exclude | Where-Object { $envName -like $_ }).Count -gt 0)
     $defs = @()
-    $pioBoard = ""; $pioMcu = ""
+    $pioBoard = ""; $pioMcu = ""; $pioMemory = ""; $pioMemoryArduino = ""; $pioVariant = ""; $pioExtra = $null; $flagText = ""
     foreach ($kv in $sec[1]) {
       if ([string]$kv[0] -eq "board") { $pioBoard = [string]$kv[1] }
       if ([string]$kv[0] -eq "board_build.mcu") { $pioMcu = [string]$kv[1] }
+      # memory type as the espressif32 platform reads it: board_build.memory_type, else board_build.arduino.memory_type
+      if ([string]$kv[0] -eq "board_build.memory_type") { $pioMemory = [string]$kv[1] }
+      if ([string]$kv[0] -eq "board_build.arduino.memory_type") { $pioMemoryArduino = [string]$kv[1] }
+      if ([string]$kv[0] -eq "board_build.variant") { $pioVariant = [string]$kv[1] }
+      if ([string]$kv[0] -eq "board_build.extra_flags") { $pioExtra = "$(@($kv[1]) -join ' ')" }
+      if ([string]$kv[0] -eq "build_flags") { $flagText += " " + "$(@($kv[1]) -join ' ')" }
       if ([string]$kv[0] -ne "build_flags") { continue }
       foreach ($fl in @($kv[1])) {
         # the function returns ONE array object; @() around the call would nest it
@@ -1322,7 +1388,16 @@ function Get-PlatformIOBoards($M, [string]$EnvPattern, [string]$ProjectDir, [str
       continue
     }
     $flags = @($defs | Where-Object { $_ -ne $board } | ForEach-Object { "-D" + $_ })
-    $result += @{ Define = $board; Flags = $flags; Env = $envName; Mcu = (Get-PioMcuName $pioBoard $pioMcu $ProjectDir) }
+    $mcuName = Get-PioMcuName $pioBoard $pioMcu $ProjectDir
+    # chip GPIOs: memory type and BOARD_HAS_PSRAM of the env, else of the board manifest (board_build.extra_flags replaces its
+    # flags); the manifest is read also when the env sets board_build.mcu
+    $bInfo = Get-PioBoardJson $pioBoard $ProjectDir
+    if (-not $pioMemory) { $pioMemory = $pioMemoryArduino }
+    if (-not $pioMemory -and $bInfo) { $pioMemory = $bInfo.Memory }
+    if (-not $pioVariant -and $bInfo) { $pioVariant = $bInfo.Variant }
+    if ($null -eq $pioExtra) { $pioExtra = ""; if ($bInfo) { $pioExtra = $bInfo.Extra } }
+    $psram = (($pioExtra + " " + $flagText) -match '-D\s*BOARD_HAS_PSRAM\b') -and -not ($flagText -match '-U\s*BOARD_HAS_PSRAM\b')
+    $result += @{ Define = $board; Flags = $flags; Env = $envName; Mcu = $mcuName; Memory = $pioMemory; Psram = $psram; Variant = $pioVariant }
   }
   if ($result.Count -eq 0) { Stop-OnSkip ("No PlatformIO env matches {0}" -f $EnvPattern) }
   return $result
@@ -1333,6 +1408,37 @@ function Get-PlatformIOBoards($M, [string]$EnvPattern, [string]$ProjectDir, [str
 # ------------------------------------------------------------------------------------------------
 function Test-Wildcard([string]$Pattern, [string]$Text) {
   return ($Text -like $Pattern)
+}
+
+# @brief Pin constants of the Arduino variant (pins_arduino.h: static const uint8_t D8 = 7;), read once per MCU and variant;
+#        board headers use them (PROG_LED_PIN (D8), LED_BUILTIN), the preprocessor cannot resolve them
+function Get-VariantPinConstants([string]$Mcu, [string]$Variant) {
+  $consts = @{}
+  if (-not $Mcu -or -not $Variant) { return $consts }
+  $pkg = ""
+  if ($Mcu -like "ESP32*") { $pkg = "framework-arduinoespressif32" } elseif ($Mcu -like "RP2*") { $pkg = "framework-arduinopico" }
+  if (-not $pkg) { return $consts }
+  if ($null -eq $script:VariantConsts) { $script:VariantConsts = @{} }
+  $key = "$pkg|$Variant"
+  if ($script:VariantConsts.ContainsKey($key)) { return $script:VariantConsts[$key] }
+  $f = [System.IO.Path]::Combine((Get-PioCoreDir), "packages", $pkg, "variants", $Variant, "pins_arduino.h")
+  if (Test-Path -LiteralPath $f -PathType Leaf) {
+    foreach ($l in [System.IO.File]::ReadAllLines($f)) {
+      if ($l -match '^\s*static\s+const\s+(?:uint8_t|int|uint16_t|unsigned\s+int)\s+(\w+)\s*=\s*(0[xX][0-9a-fA-F]+|\d+)\s*;') {
+        $consts[$Matches[1]] = $Matches[2]
+      }
+    }
+  }
+  $script:VariantConsts[$key] = $consts
+  return $consts
+}
+
+# @brief A pin value that is a variant constant (D8, LED_BUILTIN, also in parentheses) -> its number; anything else unchanged
+function Resolve-VariantPin([string]$Text, [hashtable]$Consts) {
+  $t = $Text.Trim()
+  while ($t -match '^\((.*)\)$') { $t = $Matches[1].Trim() }
+  if ($Consts.ContainsKey($t)) { return $Consts[$t] }
+  return $Text
 }
 
 function Resolve-Board($M, $BoardEntry) {
@@ -1396,6 +1502,18 @@ function Resolve-Board($M, $BoardEntry) {
     [void]$sb.AppendLine("@@ `"RSV$i`" " + $M.Reserved[$i])
     [void]$sb.AppendLine("#endif")
   }
+  $rsvCheck = ($M.Conflicts -and $M.Conflicts.Reserved)
+  if ($rsvCheck) {
+    $autoMacros = @($AUTO_RESERVED) + @($TP_RESERVED)
+    for ($i = 0; $i -lt $autoMacros.Count; $i++) {
+      [void]$sb.AppendLine("#ifdef " + $autoMacros[$i])
+      [void]$sb.AppendLine("@@ `"ARSV$i`" " + $autoMacros[$i])
+      [void]$sb.AppendLine("#endif")
+    }
+    [void]$sb.AppendLine("#ifdef MASK_VERSION")
+    [void]$sb.AppendLine("@@ `"MASKV`" MASK_VERSION")
+    [void]$sb.AppendLine("#endif")
+  }
   # port description of the board header: HW_PORT_COUNT, HW_PORT_<n>_GPIO, HW_PORT_<n>_LABEL
   [void]$sb.AppendLine("#ifdef HW_PORT_COUNT")
   [void]$sb.AppendLine("@@ `"PORTCOUNT`" HW_PORT_COUNT")
@@ -1435,6 +1553,9 @@ function Resolve-Board($M, $BoardEntry) {
   $lines = Invoke-Preprocessor -Source $sb.ToString() -Defines $defines
   $res = @{}
   foreach ($l in $lines) { if ($l -match '^@@ "(\w+)" (.*)$') { $res[$Matches[1]] = $Matches[2] } }
+  # reserved pin macros may name a pin constant of the Arduino variant (UP1: PROG_LED_PIN (D8))
+  $vc = Get-VariantPinConstants "$($BoardEntry.Mcu)" "$($BoardEntry.Variant)"
+  if ($vc.Count -gt 0) { foreach ($k in @($res.Keys | Where-Object { $_ -match '^A?RSV\d+$' })) { $res[$k] = Resolve-VariantPin $res[$k] $vc } }
 
   $board = @{
     Define = $BoardEntry.Define; HwId = $ident.HwId; DeviceId = $ident.Id; Name = $ident.Name
@@ -1486,6 +1607,41 @@ function Resolve-Board($M, $BoardEntry) {
       $rg = ConvertFrom-CInteger $res["RSV$i"]
       if ($null -ne $rg -and $rg -ge 0) { $reservedGpio[$rg] = $M.Reserved[$i] }
     }
+  }
+  # <Conflicts reserved="true">: GPIOs the board uses itself (manifest <ReservedPins>, the automatic pins, the chip GPIOs of
+  # its MCU) and the KNX UART pins with the TP state of the env (true / false; $null = no MASK_VERSION, e.g. a <Board> line)
+  $board.ReservedGpios = @(); $board.TpGpios = @(); $board.TpStates = @()
+  if ($rsvCheck) {
+    $nonInt = @()
+    for ($i = 0; $i -lt $M.Reserved.Count; $i++) { if ($res.ContainsKey("RSV$i") -and $null -eq (ConvertFrom-CInteger $res["RSV$i"]) -and -not (Test-CNegative $res["RSV$i"])) { $nonInt += $M.Reserved[$i] } }
+    # manifest pins; a KNX UART macro listed there follows the TP rule below like the automatic one
+    $own = @()
+    for ($i = 0; $i -lt $M.Reserved.Count; $i++) {
+      if ($TP_RESERVED -contains $M.Reserved[$i] -or -not $res.ContainsKey("RSV$i")) { continue }
+      $mg = ConvertFrom-CInteger $res["RSV$i"]
+      if ($null -ne $mg -and $mg -ge 0 -and $mg -le 254) { $own += $mg }
+    }
+    for ($i = 0; $i -lt $autoMacros.Count; $i++) {
+      if (-not $res.ContainsKey("ARSV$i")) { continue }
+      $ag = ConvertFrom-CInteger $res["ARSV$i"]
+      if ($null -eq $ag) { if (-not (Test-CNegative $res["ARSV$i"])) { $nonInt += $autoMacros[$i] }; continue }
+      if ($ag -lt 0 -or $ag -gt 254) { continue }
+      if ($TP_RESERVED -contains $autoMacros[$i]) { $board.TpGpios += $ag } else { $own += $ag }
+    }
+    # the header compares (int)(MACRO): a value the generator cannot read as a number would differ between ETS and firmware
+    if ($nonInt.Count -gt 0) { Stop-WithError ("{0}: <Conflicts reserved>: the reserved pin macro(s) {1} do not resolve to an integer" -f $BoardEntry.Define, (($nonInt | Sort-Object -Unique) -join ", ")) }
+    $chip = $null; if ($BoardEntry.Mcu -and $CHIP_RESERVED.ContainsKey("$($BoardEntry.Mcu)")) { $chip = $CHIP_RESERVED["$($BoardEntry.Mcu)"] }
+    if ($chip) {
+      $own += $chip.Base
+      if ($BoardEntry.Psram) { $own += $chip.Cs1 }
+      if ("$($BoardEntry.Memory)" -like "*_opi") { $own += $chip.Octal }
+    }
+    elseif ("$($BoardEntry.Mcu)" -like "ESP32*") { Write-Warn ("{0}: <Conflicts reserved>: no flash / PSRAM GPIO table for {1} - the ETS check knows only the pin macros there" -f $BoardEntry.Define, $BoardEntry.Mcu) }
+    $board.ReservedGpios = @($own | ForEach-Object { [int]$_ } | Sort-Object -Unique)
+    $board.TpGpios = @($board.TpGpios | ForEach-Object { [int]$_ } | Sort-Object -Unique)
+    $tp = $null
+    if ($res.ContainsKey("MASKV")) { $mv = ConvertFrom-CInteger $res["MASKV"]; if ($null -ne $mv) { $tp = ($TP_MASKS -contains $mv) } }
+    $board.TpStates = @(, $tp)
   }
   $board.ReservedSkipped = 0
   foreach ($role in $M.Roles) { $board.Pins[$role.Name] = New-Object System.Collections.Generic.List[object] }
@@ -2516,6 +2672,19 @@ $swDone
 # ------------------------------------------------------------------------------------------------
 # @brief Board-dependent part of <Conflicts>: port parameter of every use per board (port="..." with {{ }} expressions,
 #        $b = board, $tt = ModuleType of the hardware module, two digits), the aliases of the calculation inputs and the checks that need the boards
+# @brief Reserved GPIOs of a board for <Conflicts reserved="true">: Rsv (flag 2) = own pins, plus the KNX UART pins when every env
+#        is a TP build; Tp (flag 3) = the KNX UART pins when the envs differ or one has no MASK_VERSION; no TP env: UART pins free
+function Get-BoardReservedSets($Board) {
+  $states = @($Board.TpStates)
+  $allTp = ($states.Count -gt 0 -and @($states | Where-Object { $_ -ne $true }).Count -eq 0)
+  $someTp = (@($states | Where-Object { $_ -ne $false }).Count -gt 0)
+  $rsv = @($Board.ReservedGpios)
+  $tp = @()
+  if ($allTp) { $rsv = @(@($rsv) + @($Board.TpGpios) | ForEach-Object { [int]$_ } | Sort-Object -Unique) }
+  elseif ($someTp) { $tp = @($Board.TpGpios | Where-Object { $rsv -notcontains $_ }) }
+  return @{ Rsv = $rsv; Tp = $tp }
+}
+
 function Resolve-Conflicts($M, $Boards) {
   $cf = $M.Conflicts
   $refs = Get-ParamRefIds $M
@@ -2567,6 +2736,16 @@ function Resolve-Conflicts($M, $Boards) {
     }
     if ($u.Mode -eq 2) { $inputs.Add(@{ Ref = $distinct[0]; Alias = "U$($u.Index)" }) }
     else { foreach ($slot in @($u.BoardRefs.Keys | Sort-Object)) { $inputs.Add(@{ Ref = $u.BoardRefs[$slot]; Alias = ("U{0}B{1}" -f $u.Index, $slot) }) } }
+  }
+  if ($cf.Reserved) {
+    foreach ($b in $Boards) {
+      if (-not $b.Mcu) { Write-Detail ("  <Conflicts reserved>: {0} has no MCU (no env) - no flash / PSRAM GPIOs, only the pin macros" -f $b.Define) }
+      $sets = Get-BoardReservedSets $b
+      foreach ($pt in @($b.Ports)) {
+        if (@($sets.Rsv) -contains $pt.Gpio) { Write-Warn ("<Conflicts reserved>: {0} offers port {1} on GPIO {2}, which the board reserves" -f $b.Define, $pt.N, $pt.Gpio) }
+        elseif (@($sets.Tp) -contains $pt.Gpio) { Write-Warn ("<Conflicts reserved>: {0} offers port {1} on GPIO {2}, the KNX UART of its TP firmware" -f $b.Define, $pt.N, $pt.Gpio) }
+      }
+    }
   }
   if ($maxWired -gt 0) {
     foreach ($b in $Boards) {
@@ -2622,6 +2801,7 @@ function New-ConflictsJs($M, $Boards) {
   [void]$sb.AppendLine(($rows -join ",`n"))
   [void]$sb.AppendLine("];")
   [void]$sb.AppendLine("// DEVICE_HW_ID -> s: board number, ports: GPIO per port value (null: port not offered), relays: GPIO of the hard-wired relays")
+  if ($cf.Reserved) { [void]$sb.AppendLine("// rsv: GPIOs the board reserves (flag 2); tp: KNX UART GPIOs of a board with TP and IP firmware variants (flag 3)") }
   [void]$sb.AppendLine("var ${p}_conflictBoards = {")
   $rows = @()
   foreach ($b in $Boards) {
@@ -2632,10 +2812,27 @@ function New-ConflictsJs($M, $Boards) {
       if ($pt.Count -gt 0) { $ports += [string]$pt[0].Gpio } else { $ports += "null" }
     }
     $relays = @($b.Relays | ForEach-Object { [string]$_.Gpio })
-    $rows += ("    {0}: {{ s: {1}, ports: [{2}], relays: [{3}] }}" -f $b.HwId, $b.Slot, ($ports -join ", "), ($relays -join ", "))
+    if ($cf.Reserved) {
+      $sets = Get-BoardReservedSets $b
+      $rows += ("    {0}: {{ s: {1}, ports: [{2}], relays: [{3}], rsv: [{4}], tp: [{5}] }}" -f $b.HwId, $b.Slot, ($ports -join ", "), ($relays -join ", "), (@($sets.Rsv) -join ", "), (@($sets.Tp) -join ", "))
+    }
+    else { $rows += ("    {0}: {{ s: {1}, ports: [{2}], relays: [{3}] }}" -f $b.HwId, $b.Slot, ($ports -join ", "), ($relays -join ", ")) }
   }
   [void]$sb.AppendLine(($rows -join ",`n"))
   [void]$sb.AppendLine("};")
+  $flagNote = "// conflict flag per use (0/1), all 0 while no or an unknown board is selected"
+  $rsvLoop = ""
+  if ($cf.Reserved) {
+    $flagNote = "// conflict flag per use (0/1; 2 = reserved GPIO, 3 = KNX UART of a TP firmware), all 0 while no or an unknown board is selected"
+    $rsvLoop = @"
+
+    for (i = 0; i < uses.length; i++) {
+        if (gpio[i] < 0) continue;
+        for (var k = 0; k < board.rsv.length; k++) if (board.rsv[k] == gpio[i]) flags[i] = 2;
+        for (k = 0; k < board.tp.length; k++) if (board.tp[k] == gpio[i] && flags[i] == 0) flags[i] = 3;
+    }
+"@.TrimEnd()
+  }
   [void]$sb.AppendLine(@"
 
 function ${p}_conflictInt(value, fallback) {
@@ -2688,7 +2885,7 @@ function ${p}_conflictGpio(input, u, i, board) {
     return -1;
 }
 
-// conflict flag per use (0/1), all 0 while no or an unknown board is selected
+$flagNote
 function ${p}_conflictFlags(input) {
     var uses = ${p}_conflictUses;
     var flags = [];
@@ -2703,7 +2900,7 @@ function ${p}_conflictFlags(input) {
         for (var j = i + 1; j < uses.length; j++) {
             if (gpio[j] == gpio[i]) { flags[i] = 1; flags[j] = 1; }
         }
-    }
+    }$rsvLoop
     return flags;
 }
 
@@ -2733,7 +2930,8 @@ function New-ConflictsXml($M, $Boards) {
   [void]$sb.AppendLine("       ParameterRefs, Calculation (into ParameterCalculations), Conflict_<Name> (error while the use is in conflict, any page) -->")
   [void]$sb.AppendLine('  <ManufacturerData><Manufacturer><ApplicationPrograms><ApplicationProgram><Static><ParameterTypes>')
   [void]$sb.AppendLine(("    <ParameterType Id=`"%AID%_PT-{0}ConflictFlag`" Name=`"{0}ConflictFlag`">" -f $p))
-  [void]$sb.AppendLine('      <TypeNumber SizeInBit="1" Type="unsignedInt" minInclusive="0" maxInclusive="1" />')
+  if ($cf.Reserved) { [void]$sb.AppendLine('      <TypeNumber SizeInBit="2" Type="unsignedInt" minInclusive="0" maxInclusive="3" />') }
+  else { [void]$sb.AppendLine('      <TypeNumber SizeInBit="1" Type="unsignedInt" minInclusive="0" maxInclusive="1" />') }
   [void]$sb.AppendLine('    </ParameterType>')
   [void]$sb.AppendLine('  </ParameterTypes></Static></ApplicationProgram></ApplicationPrograms></Manufacturer></ManufacturerData>')
   [void]$sb.AppendLine('  <Block name="Parameters">')
@@ -2760,6 +2958,10 @@ function New-ConflictsXml($M, $Boards) {
     [void]$sb.AppendLine(("    <ParameterRefRef RefId=`"{0}`" />" -f $u.FlagRef))
     [void]$sb.AppendLine(("    <choose ParamRefId=`"{0}`">" -f $u.FlagRef))
     [void]$sb.AppendLine(("      <when test=`"1`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Error`" /></when>" -f (ConvertTo-XmlText $u.ErrorText)))
+    if ($cf.Reserved) {
+      [void]$sb.AppendLine(("      <when test=`"2`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Error`" /></when>" -f (ConvertTo-XmlText $u.ReservedText)))
+      [void]$sb.AppendLine(("      <when test=`"3`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Information`" /></when>" -f (ConvertTo-XmlText $u.TpText)))
+    }
     [void]$sb.AppendLine('    </choose>')
     [void]$sb.AppendLine('  </Block>')
   }
@@ -2770,6 +2972,10 @@ function New-ConflictsXml($M, $Boards) {
     [void]$sb.AppendLine(("    <ParameterRefRef RefId=`"{0}`" />" -f $ref))
     [void]$sb.AppendLine(("    <choose ParamRefId=`"{0}`">" -f $ref))
     [void]$sb.AppendLine(("      <when test=`"1`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Error`" /></when>" -f (ConvertTo-XmlText $ch.ErrorText)))
+    if ($cf.Reserved) {
+      [void]$sb.AppendLine(("      <when test=`"2`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Error`" /></when>" -f (ConvertTo-XmlText $ch.ReservedText)))
+      [void]$sb.AppendLine(("      <when test=`"3`"><ParameterSeparator Id=`"%AID%_PS-nnn`" Text=`"{0}`" UIHint=`"Information`" /></when>" -f (ConvertTo-XmlText $ch.TpText)))
+    }
     [void]$sb.AppendLine('    </choose>')
     [void]$sb.AppendLine('  </Block>')
   }
@@ -2994,6 +3200,59 @@ function New-Header($M, $Boards) {
     }
   }
   if ($null -ne $M.PortManual) { [void]$sb.Append((New-PortValuesHeader $M)) }
+  if ($M.Conflicts -and $M.Conflicts.Reserved) { [void]$sb.Append((New-ReservedGpioHeader $M)) }
+  return $sb.ToString()
+}
+
+# @brief Firmware part of <Conflicts reserved="true">: HardwareProfile::isReservedGpio(gpio) of the own board, the pins of the ETS
+#        check: the automatic pin macros, the KNX UART in a TP build (MASK_VERSION as knx config.h), the manifest <ReservedPins>
+#        (each #ifdef, value 0..255) and the flash / PSRAM bus of an ESP32 chip from the ESP-IDF headers
+function New-ReservedGpioHeader($M) {
+  $term = { param([string]$Mac) return ("#ifdef {0}`n        || ((int)({0}) >= 0 && (int)({0}) <= 254 && gpio == (uint8_t)({0}))`n#endif`n" -f $Mac) }
+  $sb = New-Object System.Text.StringBuilder
+  [void]$sb.AppendLine("")
+  [void]$sb.AppendLine("// GPIOs the board uses itself: the set of the ETS conflict check (<Conflicts reserved=`"true`">). Flash / PSRAM pins from the")
+  [void]$sb.AppendLine("// ESP-IDF headers; CS1 needs CONFIG_SPIRAM and BOARD_HAS_PSRAM (esp32-hal-psram.h clears CONFIG_SPIRAM without it).")
+  [void]$sb.AppendLine("#if defined(ARDUINO_ARCH_ESP32) && defined(__has_include)")
+  [void]$sb.AppendLine("#if __has_include(<soc/spi_pins.h>)")
+  [void]$sb.AppendLine("#include <soc/spi_pins.h>")
+  [void]$sb.AppendLine("#endif")
+  [void]$sb.AppendLine("#if __has_include(<sdkconfig.h>)")
+  [void]$sb.AppendLine("#include <sdkconfig.h>")
+  [void]$sb.AppendLine("#endif")
+  [void]$sb.AppendLine("#endif")
+  [void]$sb.AppendLine("namespace HardwareProfile")
+  [void]$sb.AppendLine("{")
+  [void]$sb.AppendLine("/// @brief true when the own board uses the GPIO itself; a pin macro outside 0..254 (not present, IO expander) is no GPIO")
+  [void]$sb.AppendLine("constexpr bool isReservedGpio(uint8_t gpio)")
+  [void]$sb.AppendLine("{")
+  [void]$sb.AppendLine("    // (void)gpio: a board without any of the pins leaves the parameter unused")
+  [void]$sb.AppendLine("    return (void)gpio, false")
+  [void]$sb.AppendLine("    // pins OGM-Common drives itself (Hardware.cpp, Common.cpp, Led/Manager.cpp, TimerInterrupt.cpp)")
+  foreach ($mac in $AUTO_RESERVED) { [void]$sb.Append((& $term $mac)) }
+  [void]$sb.AppendLine("    // KNX UART: used with KNX_HAS_TP only, set by knx config.h for these mask versions (USE_TP)")
+  [void]$sb.AppendLine("#if defined(MASK_VERSION) && (MASK_VERSION == 0x07B0 || MASK_VERSION == 0x091A || MASK_VERSION == 0x2920)")
+  foreach ($mac in $TP_RESERVED) { [void]$sb.Append((& $term $mac)) }
+  [void]$sb.AppendLine("#endif")
+  $own = @($M.Reserved | Where-Object { $AUTO_RESERVED -notcontains $_ -and $TP_RESERVED -notcontains $_ })
+  if ($own.Count -gt 0) {
+    [void]$sb.AppendLine("    // <ReservedPins> of the manifest")
+    foreach ($mac in $own) { [void]$sb.Append((& $term $mac)) }
+  }
+  [void]$sb.AppendLine("#if defined(MSPI_IOMUX_PIN_NUM_CLK)")
+  [void]$sb.AppendLine("        || gpio == MSPI_IOMUX_PIN_NUM_CLK || gpio == MSPI_IOMUX_PIN_NUM_MISO || gpio == MSPI_IOMUX_PIN_NUM_MOSI")
+  [void]$sb.AppendLine("        || gpio == MSPI_IOMUX_PIN_NUM_HD || gpio == MSPI_IOMUX_PIN_NUM_WP || gpio == MSPI_IOMUX_PIN_NUM_CS0")
+  [void]$sb.AppendLine("#endif")
+  [void]$sb.AppendLine("#if defined(MSPI_IOMUX_PIN_NUM_CS1) && defined(CONFIG_SPIRAM) && (defined(BOARD_HAS_PSRAM) || !defined(ESP32_ARDUINO_LIB_BUILDER))")
+  [void]$sb.AppendLine("        || gpio == MSPI_IOMUX_PIN_NUM_CS1")
+  [void]$sb.AppendLine("#endif")
+  [void]$sb.AppendLine("#if defined(MSPI_IOMUX_PIN_NUM_D4) && (defined(CONFIG_SPIRAM_MODE_OCT) || defined(CONFIG_ESPTOOLPY_OCT_FLASH))")
+  [void]$sb.AppendLine("        || gpio == MSPI_IOMUX_PIN_NUM_D4 || gpio == MSPI_IOMUX_PIN_NUM_D5 || gpio == MSPI_IOMUX_PIN_NUM_D6")
+  [void]$sb.AppendLine("        || gpio == MSPI_IOMUX_PIN_NUM_D7 || gpio == MSPI_IOMUX_PIN_NUM_DQS")
+  [void]$sb.AppendLine("#endif")
+  [void]$sb.AppendLine("        ;")
+  [void]$sb.AppendLine("}")
+  [void]$sb.AppendLine("} // namespace HardwareProfile")
   return $sb.ToString()
 }
 
@@ -3226,7 +3485,7 @@ try {
   }
   foreach ($pat in $m.EnvPatterns) {
     foreach ($eb in (Get-PlatformIOBoards $m $pat.Pattern $pat.Project $pat.Exclude)) {
-      $expanded.Add(@{ Define = $eb.Define; Flags = $eb.Flags; Explicit = $false; Env = $eb.Env; Mcu = $eb.Mcu })
+      $expanded.Add(@{ Define = $eb.Define; Flags = $eb.Flags; Explicit = $false; Env = $eb.Env; Mcu = $eb.Mcu; Memory = $eb.Memory; Psram = $eb.Psram; Variant = $eb.Variant })
     }
   }
   Write-Step ("Boards: {0}" -f $expanded.Count)
@@ -3287,6 +3546,10 @@ try {
       $first.CapMask = [uint32]0
       for ($i = 0; $i -lt $first.Caps.Count; $i++) { if ($first.Caps[$i]) { $first.CapMask = $first.CapMask -bor ([uint32]1 -shl $i) } }
       $first.Envs += $o.Env
+      # GPIOs the board uses: union over its envs; the TP state per env decides about the KNX UART pins
+      $first.ReservedGpios = @(@($first.ReservedGpios) + @($o.ReservedGpios) | ForEach-Object { [int]$_ } | Sort-Object -Unique)
+      $first.TpGpios = @(@($first.TpGpios) + @($o.TpGpios) | ForEach-Object { [int]$_ } | Sort-Object -Unique)
+      $first.TpStates = @($first.TpStates) + @($o.TpStates)
       for ($i = 0; $i -lt $first.Values.Count; $i++) { if ($o.Values[$i] -gt $first.Values[$i]) { $first.Values[$i] = $o.Values[$i] } }
       foreach ($rn in @($o.Pins.Keys)) {
         $merged = @($first.Pins[$rn])

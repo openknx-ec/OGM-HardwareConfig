@@ -8,8 +8,8 @@ Der Generator liest die Board-Header dieses Repos und erzeugt daraus für eine A
 - einen Button „Hardware vom Gerät abfragen“ (ETS liest ID, Fähigkeiten und Werte vom Gerät),
 - eine Übersicht „Fähigkeiten dieser Hardware“ (mit `<Page>`: eine Hardware-Seite mit Gerätekarte aus Logo, Name, Board-Text
   und QR-Code, Hinweisen und Entwickleransicht),
-- GPIO-Auswahlfelder mit den Pins der gewählten Hardware, ohne die Pins aus `ReservedPins` (KNX-UART, Prog,
-  Ethernet, SD, I2C; boardeigene Peripherie trägt das Manifest nach),
+- GPIO-Auswahlfelder mit den Pins der gewählten Hardware, ohne die Pins aus den `<ReservedPins>` des Manifests (z. B.
+  KNX-UART, Prog, Ethernet, SD, I2C; die Liste führt jede Applikation selbst),
 - **Feature-Flags** (`op:config`-Platzhalter wie `%HWP_CAP_Wifi%`), mit denen jedes Modul der Applikation Einstellungen ein- und ausblendet,
 - einen Firmware-Header mit dem eigenen Profil (gleiche Ausdrücke wie für ETS).
 
@@ -182,7 +182,7 @@ Eigene Fähigkeiten der Applikation (`<Capability>`) trägt der Entwickler danac
 | `<Value name text expr ifdef default max unit>` | Zahl (1 Byte); ist `expr` kein Makroname, muss `ifdef` das Makro nennen, das existieren muss |
 | `<Value …><Set board value/></Value>` | Wert je Board-Muster, nur für ETS (ohne `expr` gilt sonst `default`); ein Define ohne `*`/`?` geht vor einem Muster, zwei passende Einträge derselben Art brechen ab; mit `<Output header>` nur zusammen mit `query="false"` (die Firmware sähe den Wert nicht) |
 | `<Value … query="false">` | Wert nur für ETS (Feature-Flags, Fähigkeiten-Seite): nicht Teil der Geräteabfrage und nicht im Firmware-Header; die Grenze von 4 Werten gilt nur für abgefragte Werte |
-| `<ReservedPins macros>` | Pins, die nie in einer GPIO-Rolle erscheinen (KNX-UART, Prog-Taster/-LED, …) |
+| `<ReservedPins macros>` | Pins der Applikation (Makronamen, Werte aus den Board-Headern), die nie in einer GPIO-Rolle erscheinen und mit `<Conflicts reserved="true">` als reserviert gelten. Das Capability-Pack enthält keine: jeder Pin ist erlaubt, bis die Applikation ihn hier nennt |
 | `<Boards platformio project exclude>` | Boards aus den PlatformIO-Envs, deren Name auf `platformio` passt (z. B. `release_*`). Je Env zählt das erste `-D DEVICE_…`/`OKNXHW_…`/`BOARD_…`; alle anderen `-D` des Envs gelten als Flags. Mehrere Envs mit demselben Board (TP, TP+WLAN) ergeben einen Eintrag mit der Vereinigung ihrer Fähigkeiten. Das Board eines Envs ist das Define eines Header-Blocks mit `DEVICE_HW_ID` (Build-Flags wie `DEVICE_DISPLAY_MODULE` zählen nicht); ein Env ohne solches Board oder mit zwei Boards bricht den Lauf ab (ein übergangenes Board fiele aus ETS und der Firmware-Tabelle und stünde in der Slot-Datei als `removed`); ein Board nimmt man heraus, indem man sein Env löscht. Envs, die kein Board bauen (Test-, Tool-Envs), nennt `exclude` (Muster, durch Leerzeichen getrennt), z. B. `<Boards platformio="release_*" exclude="release_native_*" />`; ein ausgeschlossenes Env, das ein Board baut, bricht den Lauf ab, `exclude` darf also kein Board-Env nennen. Die Build-Flags eines ausgeschlossenen Envs werden nur auf ein Board hin geprüft (ein Flag, das auf `\` endet, wird dabei übergangen); eine Zeile, die sich nicht auswerten lässt, wird übergangen, außer sie nennt ein Board (Header-Define oder Alias, der eine `DEVICE_HW_ID` ergibt): dann bricht sie den Lauf ab. Ein Build-Flag, das sich nicht auswerten lässt (endet auf `\`, ungültige Quotes), bricht immer ab: ein weggelassenes Define könnte eine Fähigkeit ändern. Vorrang bei gleicher HW-ID: `<Board>`-Zeile vor Env vor Muster. `project` = Ordner der platformio.ini (Standard: der des Manifests). Braucht `pio` im PATH oder in `<PLATFORMIO_CORE_DIR oder ~/.platformio>/penv`. |
 | `<Board define flags>` | Gerät oder Muster (`*`, `?`); `flags` = Build-Flags des Envs, die eine Fähigkeit oder Variante ändern. `flags` an einem Muster gelten für **jedes** passende Board. Ein einzeln genanntes Board hat Vorrang vor einem Muster (auch wenn es über Alias + Flags dieselbe HW-ID ergibt); dasselbe Board zweimal mit verschiedenen Flags bricht ab |
 | `<GpioRole name number text count>` | `count` Auswahlfelder; `number` (1–9) ist Teil der Parameter-ID und wird nie geändert |
@@ -201,7 +201,7 @@ Eigene Fähigkeiten der Applikation (`<Capability>`) trägt der Entwickler danac
 | `<Page text icon help intro queryTitle query infoDefault unselectedInfo unselectedText updateInfo firmware changeInfo features dev>` | Hardware-Seite als OpenKNX-Seite, siehe [Hardware-Seite](#hardware-seite-gerätekarte) |
 | `<Notice when title><Text>…</Text>…</Notice>` | Hinweis-Kasten für Boards mit der Fähigkeit `when`, siehe [Hardware-Seite](#hardware-seite-gerätekarte) |
 | `portManualValue`, `portNoneValue` (Wurzel) | Werte der Port-Auswahlen der Applikation: 0..n-1 = Port n des Boards, `portManualValue` (0..254) = manueller GPIO, `portNoneValue` (0..255) = kein Port, jeder andere Wert (z. B. nie geschrieben 255) = kein GPIO. Nur zusammen, verschieden. Einmal angegeben, gilt es für die Konfliktprüfung (`<Conflicts>`) und den Firmware-Header (`signalGpio`, siehe [Port-Auswahl in der Firmware](#port-auswahl-in-der-firmware)). Ein angebotener Port auf einem der beiden Werte bricht den Lauf ab |
-| `<Conflicts output number value error>` | GPIO-Konfliktprüfung in ETS, siehe [GPIO-Konflikte](#gpio-konflikte-conflicts) |
+| `<Conflicts output number value error reserved reservedError tpError>` | GPIO-Konfliktprüfung in ETS, siehe [GPIO-Konflikte](#gpio-konflikte-conflicts) und [Reservierte GPIOs](#reservierte-gpios-conflicts-reservedtrue) |
 
 ## Hardware-Seite (Gerätekarte)
 
@@ -408,6 +408,8 @@ Parameter, deren IDs bleiben. Ohne `<Conflicts>` ändert sich keine Ausgabe.
 | `number` | erste Parameter-Nummer der Flags (`%AID%_P-%TT%<number + i>`, i = Position der `<Use>`; mit `<ChannelBlock>` siehe dort) und Nummer der Berechnung (`%AID%_PC-%TT%<number>`). **Die Applikation hält `number` bis `number` + Anzahl der Flags (mit `<ChannelBlock>`: bis `number` + 10 × Blöcke + 9) und `PC-%TT%<number>` im einbindenden Modul frei.** Als Hinweis sucht der Generator die Nummern in den XML-Dateien neben `output` (ohne seine eigenen Ausgaben, frühere Teile-Dateien und `*.debug.xml`) und warnt mit dem Dateinamen; er vergleicht `%TT%` nicht (eine Datei eines anderen Moduls kann warnen) und sieht keine IDs mit `%C%` oder `{{ }}` und keine Dateien in anderen Ordnern |
 | `value` | Standard der `<Use value>`: `port` (Standard) oder `gpio` |
 | `error` | Fehlertext, `{text}` = Text der Nutzung (höchstens 255 Zeichen); Standard „GPIO-Konflikt: {text} nutzt denselben GPIO wie …“ |
+| `reserved` | `true`: eine Nutzung auf einem GPIO, den das gewählte Board selbst belegt, bekommt Flag 2 bzw. 3, siehe [Reservierte GPIOs](#reservierte-gpios-conflicts-reservedtrue); Standard `false` (Ausgabe wie ohne das Attribut) |
+| `reservedError`, `tpError` | Texte zu Flag 2 (Fehler) und 3 (Information), `{text}` wie bei `error`, höchstens 255 Zeichen; nur mit `reserved="true"` |
 | `<Param name ref>` | Eingang für Bedingungen: ParamRefId (ohne `{{ }}`) und ein Name |
 | `<Use name text>` | eine Nutzung eines GPIO, `name` alphanumerisch und eindeutig (Flag `Conflict<name>`, Block `Conflict_<name>`) |
 | `<Use when>` | Bedingung, unter der die Nutzung aktiv ist: `<Param> <op> <Zahl>` mit `==` `!=` `<` `<=` `>` `>=` (in XML `&lt;`) oder `<Param> in <Zahl> <Zahl> …`, verbunden mit `and` / `or` (`and` bindet stärker, keine Klammern; `and`, `or`, `in` klein geschrieben; Zahlen 32 Bit); ohne `when` immer aktiv |
@@ -428,6 +430,60 @@ mit Punkt-Namen (`output.F_<name>`).
 `name` von `<Param>` und `<Use>` höchstens 48 Zeichen (Alias `P_`/`F_` + Name, ETS: 50). Eine Teile-Datei eines früheren Laufs
 (Markierungszeile) in einem Ordner der Ausgaben, die nicht mehr `output` ist, meldet der Generator als Warnung („delete it“);
 er löscht sie nicht, `-Check` zählt sie als nicht aktuell.
+
+### Reservierte GPIOs (`<Conflicts reserved="true">`)
+
+Mit `reserved="true"` meldet ETS auch eine Nutzung auf einem GPIO, den das gewählte Board selbst belegt, und der
+Firmware-Header bekommt `HardwareProfile::isReservedGpio(gpio)` mit denselben Pins; die Firmware lehnt damit z. B. einen
+Streifen auf dem KNX-TX-Pin ab. Reserviert sind:
+
+| Pins | Quelle | Bedingung |
+|---|---|---|
+| `PROG_BUTTON_PIN`, `FUNC1_BUTTON_PIN` .. `FUNC3_BUTTON_PIN` | OGM-Common `Hardware.cpp` (Interrupt), `Common.cpp`, `TimerInterrupt.cpp` | automatisch, wenn das Makro im Board-Header steht |
+| `PROG_LED_PIN`, `INFO_LED_PIN`, `INFO1_LED_PIN` .. `INFO3_LED_PIN`, `OPENKNX_SERIALLED_PIN` | OGM-Common `Led/Manager.cpp` | automatisch |
+| `SAVE_INTERRUPT_PIN` | OGM-Common `Common.cpp` | automatisch |
+| `KNX_UART_RX_PIN`, `KNX_UART_TX_PIN` | OGM-Common `Hardware.cpp` unter `KNX_HAS_TP` | automatisch, nur in einem TP-Build: `MASK_VERSION` 0x07B0, 0x091A oder 0x2920 (knx `config.h` setzt dort `USE_TP`) |
+| Flash-/PSRAM-Bus des ESP32 | ESP-IDF `soc/spi_pins.h` (`MSPI_IOMUX_PIN_NUM_*`), `sdkconfig.h` | automatisch, siehe unten |
+| `<ReservedPins macros>` des Manifests | Board-Header | was die Applikation darüber hinaus nicht ansteuert (z. B. Ethernet-PHY, Status-LED) |
+
+Die automatischen Pins lassen sich nicht abwählen. Ein Pin-Makro mit einem Wert außerhalb 0..254 (z. B. `-1` = nicht
+vorhanden, 255 = kein GPIO, > 255 = IO-Expander) ist kein GPIO. Eine Pin-Konstante des Arduino-Variants
+(`pins_arduino.h`: `static const uint8_t D8 = 7;`, z. B. `PROG_LED_PIN (D8)` oder `LED_BUILTIN` beim UP1 WLAN) setzt der
+Generator ein; den Variant nimmt er aus `board_build.variant`, sonst `build.variant` des Board-Manifests. Ein Makro, das
+danach kein Zahlenwert ist (z. B. ein Enum-Name), bricht den Lauf ab: ETS und Firmware würden sonst verschiedene Pins prüfen.
+
+Flash-/PSRAM-Bus (Tabelle im Generator, gleiche Werte wie die ESP-IDF-Header von framework-arduinoespressif32-libs 5.5.5):
+
+| MCU | immer (CLK MISO MOSI HD WP CS0) | PSRAM-CS1 | Oktal D4..D7, DQS |
+|---|---|---|---|
+| ESP32 | 6–11 | – | – |
+| ESP32-S3 | 27–32 | 26 | 33–37 |
+| ESP32-C3 | 12–17 | – | – |
+| ESP32-C5 | 16 17 18 20 21 22 | 15 | – |
+| ESP32-C6 | 24 25 26 28 29 30 | – | – |
+
+CS1 zählt mit `CONFIG_SPIRAM` und `BOARD_HAS_PSRAM` (ohne das Flag löscht `esp32-hal-psram.h` `CONFIG_SPIRAM`); der
+Generator liest `BOARD_HAS_PSRAM` aus den Build-Flags, `board_build.extra_flags` oder dem Board-Manifest. Die Oktal-Pins
+zählen bei einem Speichertyp `*_opi` (wie die Plattform: `board_build.memory_type`, sonst
+`board_build.arduino.memory_type`, sonst `build.arduino.memory_type` bzw. `build.memory_type` des Board-Manifests; das
+Manifest wird auch gelesen, wenn das Env `board_build.mcu` setzt). RP2040/RP2350 haben einen eigenen QSPI-Bus, keinen GPIO. Ein ESP32-Typ ohne Tabelle gibt eine Warnung.
+
+ETS wertet je Env aus (MCU, Speichertyp, `MASK_VERSION` des Envs); mehrere Envs eines Boards ergeben die Vereinigung. Die
+KNX-UART-Pins eines Boards, dessen Envs TP und IP mischen (z. B. KNeoPix ESP32-S3: TP, IP, TP+WLAN unter einer HW-ID),
+bekommen Flag 3 mit `tpError` (Information: „eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei“); ETS kennt
+die geladene Firmware nicht. Ein Board nur mit IP-Envs hat die UART-Pins frei. Flag 2 (Fehler, `reservedError`) geht vor
+Flag 1 (gleicher GPIO), Flag 1 vor Flag 3.
+
+```cpp
+// Firmware: der erzeugte Header prüft das eigene Board zur Compile-Zeit
+if (HardwareProfile::isReservedGpio(gpio)) { /* Kanal nicht starten */ }
+```
+
+Grenzen: Ein Board aus einer `<Board>`-Zeile (ohne Env) hat keine MCU, keinen Variant und kein `MASK_VERSION`: ETS kennt
+dort keine Flash-/PSRAM-Pins und meldet die UART-Pins mit Flag 3, eine Variant-Konstante (`D8`) bricht den Lauf ab; die
+Firmware prüft trotzdem vollständig. GPIO-Rollen lassen nur die
+`<ReservedPins>` des Manifests weg, nicht die automatischen Pins (deren Auswahl meldet die Prüfung). Ein Text kann den GPIO
+nicht nennen (ETS-Texte sind fest). Die Tabelle des Flash-/PSRAM-Bus muss mit einem neuen ESP-IDF geprüft werden.
 
 Grenzen: Nutzungen eines Boards ohne den Port-Parameter (Board nicht in der Union) brechen beim OpenKNXproducer ab, nicht
 im Generator. Die Port-Tabelle enthält die angebotenen Ports (`<Ports use>`, `excludeRelayPins`); die Firmware

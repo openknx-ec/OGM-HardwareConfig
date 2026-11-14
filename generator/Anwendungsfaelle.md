@@ -325,6 +325,17 @@ if (data == HardwareProfile::GPIO_NONE) { /* kein GPIO: andere oder keine Hardwa
   sie sind; die Prüfung liest sie nur. Ohne gewählte Hardware prüft sie nicht.
 - Die Fehlermeldungen sind Parameter ohne Gerätespeicher; die Firmware sieht davon nichts.
 - Beispiel mit Kontexthilfe: Demo-Seite „7 GPIO-Konflikte“.
+- Reservierte GPIOs: mit `<Conflicts … reserved="true">` meldet ETS auch eine Nutzung auf einem Pin, den das Board selbst
+  belegt (Prog-Taster/-LED, Info-LEDs, KNX-UART eines TP-Builds, Flash/PSRAM des ESP32, dazu die `<ReservedPins>` der
+  Applikation), und die Firmware prüft mit `HardwareProfile::isReservedGpio(gpio)` dieselben Pins:
+
+```xml
+<ReservedPins macros="NEOPIX_LED_PIN QUINLED_ETHERNET_MDC_GPIO QUINLED_ETHERNET_MDIO_GPIO" />   <!-- nur, was die App zusätzlich nicht ansteuert -->
+<Conflicts output="src/MyApp.conflicts.gen.xml" number="900" reserved="true"> … </Conflicts>
+```
+```cpp
+if (HardwareProfile::isReservedGpio(data)) { /* Kanal nicht starten, Fehler loggen */ }
+```
 
 ---
 

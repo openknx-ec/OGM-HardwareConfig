@@ -35,10 +35,6 @@
   <Value name="StatusLeds"   text="Status-LEDs"    expr="OPENKNX_SLED_COUNT"    default="0" max="8" />
   <Value name="FlashMB"      text="Flash-Speicher" expr="DEVICE_FLASH_SIZE_MB"  default="0" max="16" unit="MB" />
 
-  <!-- Pins the platform uses itself: never offered in a GPIO role. Board-specific pins without a common name
-       (e.g. QUINLED_ETHERNET_*_GPIO) go into the manifest's own <ReservedPins>. ETH_PHY_ADDR and ETH_PHY_SPI_HOST
-       are left out on purpose: their value is an address / host number, not a GPIO. -->
-  <ReservedPins macros="KNX_UART_RX_PIN KNX_UART_TX_PIN PROG_BUTTON_PIN PROG_LED_PIN SAVE_INTERRUPT_PIN INFO_LED_PIN INFO1_LED_PIN INFO2_LED_PIN INFO3_LED_PIN OPENKNX_SERIALLED_PIN" />
-  <ReservedPins macros="PIN_ETH_SS PIN_ETH_SCK PIN_ETH_MOSI PIN_ETH_MISO PIN_ETH_INT PIN_ETH_RES ETH_PHY_RST ETH_PHY_POWER ETH_PHY_MDC ETH_PHY_MDIO ETH_PHY_CS ETH_PHY_IRQ ETH_PHY_SPI_SCK ETH_PHY_SPI_MISO ETH_PHY_SPI_MOSI" />
-  <ReservedPins macros="PIN_SDCARD_SCK PIN_SDCARD_MOSI PIN_SDCARD_MISO PIN_SDCARD_CS PIN_SDCARD_CD I2C_SDA_PIN I2C_SCL_PIN" />
+  <!-- No <ReservedPins> here: every pin is allowed unless the application lists it in its own manifest. The pins OGM-Common and
+       the chip use are reserved by <Conflicts reserved="true"> without a list (generator README, "Reservierte GPIOs"). -->
 </CapabilityPack>
