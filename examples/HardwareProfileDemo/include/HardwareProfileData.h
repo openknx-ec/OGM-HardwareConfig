@@ -296,3 +296,145 @@ constexpr uint8_t relaySignalGpio(uint16_t selected, uint8_t relayIndex, uint8_t
          : signalGpio(selected, portValue, manualGpio);
 }
 } // namespace HardwareProfile
+
+// GPIOs the board uses itself: the set of the ETS conflict check (<Conflicts reserved="true">). Flash / PSRAM pins from the
+// ESP-IDF headers; CS1 needs CONFIG_SPIRAM and BOARD_HAS_PSRAM (esp32-hal-psram.h clears CONFIG_SPIRAM without it).
+#if defined(ARDUINO_ARCH_ESP32) && defined(__has_include)
+#if __has_include(<soc/spi_pins.h>)
+#include <soc/spi_pins.h>
+#endif
+#if __has_include(<sdkconfig.h>)
+#include <sdkconfig.h>
+#endif
+#endif
+namespace HardwareProfile
+{
+/// @brief true when the own board uses the GPIO itself; a pin macro outside 0..254 (not present, IO expander) is no GPIO
+constexpr bool isReservedGpio(uint8_t gpio)
+{
+    // (void)gpio: a board without any of the pins leaves the parameter unused
+    return (void)gpio, false
+    // pins OGM-Common drives itself (Hardware.cpp, Common.cpp, Led/Manager.cpp, TimerInterrupt.cpp)
+#ifdef PROG_BUTTON_PIN
+        || ((int)(PROG_BUTTON_PIN) >= 0 && (int)(PROG_BUTTON_PIN) <= 254 && gpio == (uint8_t)(PROG_BUTTON_PIN))
+#endif
+#ifdef PROG_LED_PIN
+        || ((int)(PROG_LED_PIN) >= 0 && (int)(PROG_LED_PIN) <= 254 && gpio == (uint8_t)(PROG_LED_PIN))
+#endif
+#ifdef INFO_LED_PIN
+        || ((int)(INFO_LED_PIN) >= 0 && (int)(INFO_LED_PIN) <= 254 && gpio == (uint8_t)(INFO_LED_PIN))
+#endif
+#ifdef INFO1_LED_PIN
+        || ((int)(INFO1_LED_PIN) >= 0 && (int)(INFO1_LED_PIN) <= 254 && gpio == (uint8_t)(INFO1_LED_PIN))
+#endif
+#ifdef INFO2_LED_PIN
+        || ((int)(INFO2_LED_PIN) >= 0 && (int)(INFO2_LED_PIN) <= 254 && gpio == (uint8_t)(INFO2_LED_PIN))
+#endif
+#ifdef INFO3_LED_PIN
+        || ((int)(INFO3_LED_PIN) >= 0 && (int)(INFO3_LED_PIN) <= 254 && gpio == (uint8_t)(INFO3_LED_PIN))
+#endif
+#ifdef OPENKNX_SERIALLED_PIN
+        || ((int)(OPENKNX_SERIALLED_PIN) >= 0 && (int)(OPENKNX_SERIALLED_PIN) <= 254 && gpio == (uint8_t)(OPENKNX_SERIALLED_PIN))
+#endif
+#ifdef FUNC1_BUTTON_PIN
+        || ((int)(FUNC1_BUTTON_PIN) >= 0 && (int)(FUNC1_BUTTON_PIN) <= 254 && gpio == (uint8_t)(FUNC1_BUTTON_PIN))
+#endif
+#ifdef FUNC2_BUTTON_PIN
+        || ((int)(FUNC2_BUTTON_PIN) >= 0 && (int)(FUNC2_BUTTON_PIN) <= 254 && gpio == (uint8_t)(FUNC2_BUTTON_PIN))
+#endif
+#ifdef FUNC3_BUTTON_PIN
+        || ((int)(FUNC3_BUTTON_PIN) >= 0 && (int)(FUNC3_BUTTON_PIN) <= 254 && gpio == (uint8_t)(FUNC3_BUTTON_PIN))
+#endif
+#ifdef SAVE_INTERRUPT_PIN
+        || ((int)(SAVE_INTERRUPT_PIN) >= 0 && (int)(SAVE_INTERRUPT_PIN) <= 254 && gpio == (uint8_t)(SAVE_INTERRUPT_PIN))
+#endif
+    // KNX UART: used with KNX_HAS_TP only, set by knx config.h for these mask versions (USE_TP)
+#if defined(MASK_VERSION) && (MASK_VERSION == 0x07B0 || MASK_VERSION == 0x091A || MASK_VERSION == 0x2920)
+#ifdef KNX_UART_RX_PIN
+        || ((int)(KNX_UART_RX_PIN) >= 0 && (int)(KNX_UART_RX_PIN) <= 254 && gpio == (uint8_t)(KNX_UART_RX_PIN))
+#endif
+#ifdef KNX_UART_TX_PIN
+        || ((int)(KNX_UART_TX_PIN) >= 0 && (int)(KNX_UART_TX_PIN) <= 254 && gpio == (uint8_t)(KNX_UART_TX_PIN))
+#endif
+#endif
+    // <ReservedPins> of the manifest
+#ifdef PIN_ETH_SS
+        || ((int)(PIN_ETH_SS) >= 0 && (int)(PIN_ETH_SS) <= 254 && gpio == (uint8_t)(PIN_ETH_SS))
+#endif
+#ifdef PIN_ETH_SCK
+        || ((int)(PIN_ETH_SCK) >= 0 && (int)(PIN_ETH_SCK) <= 254 && gpio == (uint8_t)(PIN_ETH_SCK))
+#endif
+#ifdef PIN_ETH_MOSI
+        || ((int)(PIN_ETH_MOSI) >= 0 && (int)(PIN_ETH_MOSI) <= 254 && gpio == (uint8_t)(PIN_ETH_MOSI))
+#endif
+#ifdef PIN_ETH_MISO
+        || ((int)(PIN_ETH_MISO) >= 0 && (int)(PIN_ETH_MISO) <= 254 && gpio == (uint8_t)(PIN_ETH_MISO))
+#endif
+#ifdef PIN_ETH_INT
+        || ((int)(PIN_ETH_INT) >= 0 && (int)(PIN_ETH_INT) <= 254 && gpio == (uint8_t)(PIN_ETH_INT))
+#endif
+#ifdef PIN_ETH_RES
+        || ((int)(PIN_ETH_RES) >= 0 && (int)(PIN_ETH_RES) <= 254 && gpio == (uint8_t)(PIN_ETH_RES))
+#endif
+#ifdef ETH_PHY_RST
+        || ((int)(ETH_PHY_RST) >= 0 && (int)(ETH_PHY_RST) <= 254 && gpio == (uint8_t)(ETH_PHY_RST))
+#endif
+#ifdef ETH_PHY_POWER
+        || ((int)(ETH_PHY_POWER) >= 0 && (int)(ETH_PHY_POWER) <= 254 && gpio == (uint8_t)(ETH_PHY_POWER))
+#endif
+#ifdef ETH_PHY_MDC
+        || ((int)(ETH_PHY_MDC) >= 0 && (int)(ETH_PHY_MDC) <= 254 && gpio == (uint8_t)(ETH_PHY_MDC))
+#endif
+#ifdef ETH_PHY_MDIO
+        || ((int)(ETH_PHY_MDIO) >= 0 && (int)(ETH_PHY_MDIO) <= 254 && gpio == (uint8_t)(ETH_PHY_MDIO))
+#endif
+#ifdef ETH_PHY_CS
+        || ((int)(ETH_PHY_CS) >= 0 && (int)(ETH_PHY_CS) <= 254 && gpio == (uint8_t)(ETH_PHY_CS))
+#endif
+#ifdef ETH_PHY_IRQ
+        || ((int)(ETH_PHY_IRQ) >= 0 && (int)(ETH_PHY_IRQ) <= 254 && gpio == (uint8_t)(ETH_PHY_IRQ))
+#endif
+#ifdef ETH_PHY_SPI_SCK
+        || ((int)(ETH_PHY_SPI_SCK) >= 0 && (int)(ETH_PHY_SPI_SCK) <= 254 && gpio == (uint8_t)(ETH_PHY_SPI_SCK))
+#endif
+#ifdef ETH_PHY_SPI_MISO
+        || ((int)(ETH_PHY_SPI_MISO) >= 0 && (int)(ETH_PHY_SPI_MISO) <= 254 && gpio == (uint8_t)(ETH_PHY_SPI_MISO))
+#endif
+#ifdef ETH_PHY_SPI_MOSI
+        || ((int)(ETH_PHY_SPI_MOSI) >= 0 && (int)(ETH_PHY_SPI_MOSI) <= 254 && gpio == (uint8_t)(ETH_PHY_SPI_MOSI))
+#endif
+#ifdef PIN_SDCARD_SCK
+        || ((int)(PIN_SDCARD_SCK) >= 0 && (int)(PIN_SDCARD_SCK) <= 254 && gpio == (uint8_t)(PIN_SDCARD_SCK))
+#endif
+#ifdef PIN_SDCARD_MOSI
+        || ((int)(PIN_SDCARD_MOSI) >= 0 && (int)(PIN_SDCARD_MOSI) <= 254 && gpio == (uint8_t)(PIN_SDCARD_MOSI))
+#endif
+#ifdef PIN_SDCARD_MISO
+        || ((int)(PIN_SDCARD_MISO) >= 0 && (int)(PIN_SDCARD_MISO) <= 254 && gpio == (uint8_t)(PIN_SDCARD_MISO))
+#endif
+#ifdef PIN_SDCARD_CS
+        || ((int)(PIN_SDCARD_CS) >= 0 && (int)(PIN_SDCARD_CS) <= 254 && gpio == (uint8_t)(PIN_SDCARD_CS))
+#endif
+#ifdef PIN_SDCARD_CD
+        || ((int)(PIN_SDCARD_CD) >= 0 && (int)(PIN_SDCARD_CD) <= 254 && gpio == (uint8_t)(PIN_SDCARD_CD))
+#endif
+#ifdef I2C_SDA_PIN
+        || ((int)(I2C_SDA_PIN) >= 0 && (int)(I2C_SDA_PIN) <= 254 && gpio == (uint8_t)(I2C_SDA_PIN))
+#endif
+#ifdef I2C_SCL_PIN
+        || ((int)(I2C_SCL_PIN) >= 0 && (int)(I2C_SCL_PIN) <= 254 && gpio == (uint8_t)(I2C_SCL_PIN))
+#endif
+#if defined(MSPI_IOMUX_PIN_NUM_CLK)
+        || gpio == MSPI_IOMUX_PIN_NUM_CLK || gpio == MSPI_IOMUX_PIN_NUM_MISO || gpio == MSPI_IOMUX_PIN_NUM_MOSI
+        || gpio == MSPI_IOMUX_PIN_NUM_HD || gpio == MSPI_IOMUX_PIN_NUM_WP || gpio == MSPI_IOMUX_PIN_NUM_CS0
+#endif
+#if defined(MSPI_IOMUX_PIN_NUM_CS1) && defined(CONFIG_SPIRAM) && (defined(BOARD_HAS_PSRAM) || !defined(ESP32_ARDUINO_LIB_BUILDER))
+        || gpio == MSPI_IOMUX_PIN_NUM_CS1
+#endif
+#if defined(MSPI_IOMUX_PIN_NUM_D4) && (defined(CONFIG_SPIRAM_MODE_OCT) || defined(CONFIG_ESPTOOLPY_OCT_FLASH))
+        || gpio == MSPI_IOMUX_PIN_NUM_D4 || gpio == MSPI_IOMUX_PIN_NUM_D5 || gpio == MSPI_IOMUX_PIN_NUM_D6
+        || gpio == MSPI_IOMUX_PIN_NUM_D7 || gpio == MSPI_IOMUX_PIN_NUM_DQS
+#endif
+        ;
+}
+} // namespace HardwareProfile

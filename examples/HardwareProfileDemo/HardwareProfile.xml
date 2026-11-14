@@ -75,7 +75,12 @@
   <!-- A GPIO role: the user picks a free pin per slot, the dropdown lists only the pins of the selected
        board. number = part of the ETS parameter ID, never change it. scan = regular expression over the
        macro names of the board header ($1 = first group). Pins the platform uses (KNX UART, prog
-       button/LED, ...) are left out by the ReservedPins of the capability pack. -->
+       button/LED, ...) are left out by the <ReservedPins> below. -->
+  <!-- the application's list of pins that are never offered in a GPIO role (macro names, values from the board headers).
+       ETH_PHY_ADDR and ETH_PHY_SPI_HOST are left out on purpose: their value is an address / host number, not a GPIO. -->
+  <ReservedPins macros="KNX_UART_RX_PIN KNX_UART_TX_PIN PROG_BUTTON_PIN PROG_LED_PIN SAVE_INTERRUPT_PIN INFO_LED_PIN INFO1_LED_PIN INFO2_LED_PIN INFO3_LED_PIN OPENKNX_SERIALLED_PIN" />
+  <ReservedPins macros="PIN_ETH_SS PIN_ETH_SCK PIN_ETH_MOSI PIN_ETH_MISO PIN_ETH_INT PIN_ETH_RES ETH_PHY_RST ETH_PHY_POWER ETH_PHY_MDC ETH_PHY_MDIO ETH_PHY_CS ETH_PHY_IRQ ETH_PHY_SPI_SCK ETH_PHY_SPI_MISO ETH_PHY_SPI_MOSI" />
+  <ReservedPins macros="PIN_SDCARD_SCK PIN_SDCARD_MOSI PIN_SDCARD_MISO PIN_SDCARD_CS PIN_SDCARD_CD I2C_SDA_PIN I2C_SCL_PIN" />
   <GpioRole name="Pin" number="1" text="Freier Anschluss" count="2">
     <Pins board="OKNXHW_OPENKNXIAO_*" scan="^OKNXHW_OPENKNXIAO_D(\d+)$" label="D$1" />
     <Pins board="DEVICE_QUINLED_*"    scan="^QUINLED_(Q\d|EXTRA\d)_GPIO$" label="$1" />
@@ -89,7 +94,11 @@
        the same GPIO both show their error block. The parts go into the demo module (ModuleType 46, %TT%): flags 900..907
        without memory, one calculation. port = ParamRefId per board ($b = board, $tt = ModuleType 45 of the hardware module).
        value="port": port value (portManualValue / portNoneValue of the root); value="gpio": the value is the GPIO -->
-  <Conflicts output="src/HardwareProfile.conflicts.gen.xml" number="900">
+  <!-- reserved="true": a use on a GPIO the selected board uses itself shows its own message (flag 2): the pins OGM-Common drives
+       (PROG_BUTTON/LED, INFO LEDs, serial LED, FUNC buttons, SAVE_INTERRUPT), the KNX UART of a TP build (a board with TP and IP
+       firmware variants or without env: hint, flag 3), the flash / PSRAM bus of an ESP32 and the <ReservedPins> above; the same
+       set is HardwareProfile::isReservedGpio of the firmware header -->
+  <Conflicts output="src/HardwareProfile.conflicts.gen.xml" number="900" reserved="true">
     <Param name="Outputs" ref="%AID%_P-%TT%00023_R-%TT%0002301" />
     <Param name="Signal1" ref="%AID%_P-%TT%00024_R-%TT%0002401" />
     <Param name="Signal2" ref="%AID%_P-%TT%00025_R-%TT%0002501" />

@@ -5,7 +5,7 @@
        ParameterRefs, Calculation (into ParameterCalculations), Conflict_<Name> (error while the use is in conflict, any page) -->
   <ManufacturerData><Manufacturer><ApplicationPrograms><ApplicationProgram><Static><ParameterTypes>
     <ParameterType Id="%AID%_PT-HWPConflictFlag" Name="HWPConflictFlag">
-      <TypeNumber SizeInBit="1" Type="unsignedInt" minInclusive="0" maxInclusive="1" />
+      <TypeNumber SizeInBit="2" Type="unsignedInt" minInclusive="0" maxInclusive="3" />
     </ParameterType>
   </ParameterTypes></Static></ApplicationProgram></ApplicationPrograms></Manufacturer></ManufacturerData>
   <Block name="Parameters">
@@ -154,48 +154,64 @@
     <ParameterRefRef RefId="%AID%_P-%TT%00900_R-%TT%0090001" />
     <choose ParamRefId="%AID%_P-%TT%00900_R-%TT%0090001">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Freier Anschluss 1 nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Freier Anschluss 1 nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Freier Anschluss 1 nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
   <Block name="Conflict_Pin2">
     <ParameterRefRef RefId="%AID%_P-%TT%00901_R-%TT%0090101" />
     <choose ParamRefId="%AID%_P-%TT%00901_R-%TT%0090101">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Freier Anschluss 2 nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Freier Anschluss 2 nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Freier Anschluss 2 nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
   <Block name="Conflict_Out1Data">
     <ParameterRefRef RefId="%AID%_P-%TT%00902_R-%TT%0090201" />
     <choose ParamRefId="%AID%_P-%TT%00902_R-%TT%0090201">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 1 Daten nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 1 Daten nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Ausgang 1 Daten nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
   <Block name="Conflict_Out1Clock">
     <ParameterRefRef RefId="%AID%_P-%TT%00903_R-%TT%0090301" />
     <choose ParamRefId="%AID%_P-%TT%00903_R-%TT%0090301">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 1 Takt nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 1 Takt nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Ausgang 1 Takt nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
   <Block name="Conflict_Out2Data">
     <ParameterRefRef RefId="%AID%_P-%TT%00904_R-%TT%0090401" />
     <choose ParamRefId="%AID%_P-%TT%00904_R-%TT%0090401">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 2 Daten nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 2 Daten nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Ausgang 2 Daten nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
   <Block name="Conflict_Out2Clock">
     <ParameterRefRef RefId="%AID%_P-%TT%00905_R-%TT%0090501" />
     <choose ParamRefId="%AID%_P-%TT%00905_R-%TT%0090501">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 2 Takt nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Ausgang 2 Takt nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Ausgang 2 Takt nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
   <Block name="Conflict_Relay1">
     <ParameterRefRef RefId="%AID%_P-%TT%00906_R-%TT%0090601" />
     <choose ParamRefId="%AID%_P-%TT%00906_R-%TT%0090601">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Relais 1 nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Relais 1 nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Relais 1 nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
   <Block name="Conflict_Relay2">
     <ParameterRefRef RefId="%AID%_P-%TT%00907_R-%TT%0090701" />
     <choose ParamRefId="%AID%_P-%TT%00907_R-%TT%0090701">
       <when test="1"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Relais 2 nutzt denselben GPIO wie ein anderer Anschluss, ein fest verdrahtetes Relais oder ein manueller GPIO." UIHint="Error" /></when>
+      <when test="2"><ParameterSeparator Id="%AID%_PS-nnn" Text="GPIO-Konflikt: Relais 2 nutzt einen GPIO, den die gewählte Hardware selbst belegt (KNX, Taster, LED, Flash-Speicher oder Ethernet)." UIHint="Error" /></when>
+      <when test="3"><ParameterSeparator Id="%AID%_PS-nnn" Text="Hinweis: Relais 2 nutzt den GPIO der KNX-TP-Schnittstelle dieser Hardware. Eine TP-Firmware lehnt ihn ab, mit einer IP-Firmware ist er frei." UIHint="Information" /></when>
     </choose>
   </Block>
 </KNX>
