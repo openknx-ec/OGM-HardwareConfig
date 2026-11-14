@@ -20,6 +20,7 @@ Beispiel-Applikation: [examples/HardwareProfileDemo](../examples/HardwareProfile
 | Pfad | Inhalt |
 |---|---|
 | `Build-HardwareProfile.ps1` | der Aufrufer (einziges Skript, das man startet) |
+| `QUICKSTART.md` | Schnellstart: das Hardware-Profil in fünf Schritten in ein bestehendes OAM einbinden |
 | `Anwendungsfaelle.md` | Rezepte mit Beispielen: Module, Feature-Flags, Kanalzahl, Auswahllisten, Sensoren, Netzwerk, Firmware |
 | `helpers/` | vom Aufrufer per Dot-Source geladen: `TemplateEngine.ps1` (Vorlagen), `QrCode.ps1` (QR-Kodierer), `PngImage.ps1` (PNG lesen/schreiben, QR-Code + Link) |
 | `capabilities/` | `Common.caps.xml`: Fähigkeiten-Paket zum Einbinden per `<Import href>` (LAN, WLAN, Display, … aus den Board-Headern, dazu die gesperrten Plattform-Pins); optional, aber empfohlen, `-Init` bindet es ein. Eigene Fähigkeiten definiert jedes OAM in seinem Manifest; `ThirdParty` ist fest eingebaut |
@@ -31,6 +32,8 @@ Beispiel-Applikation: [examples/HardwareProfileDemo](../examples/HardwareProfile
 Alle Skripte: Windows PowerShell 5.1 kompatibel (`#Requires -Version 5.1`), kein System.Drawing, keine externen Werkzeuge.
 
 ## Was ein Entwickler tun muss
+
+Kurzfassung mit allen Zeilen zum Kopieren: [QUICKSTART.md](QUICKSTART.md).
 
 1. **Board-Header:** Das Gerät hat eine `DEVICE_HW_ID` (siehe [README](../README.md#hardware-id-device_hw_id)).
 2. **Manifest** `HardwareProfile.xml` im Repo der Applikation anlegen (Beispiel unten).
