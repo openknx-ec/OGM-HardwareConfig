@@ -4,7 +4,7 @@
 #   2. -Check on the demo: the committed generated files match the headers and the generator
 #   3. job summary: board list and, when the check fails, which generated files the change affects
 # Only the PlatformIO CLI is installed (no platforms): the preprocessor is the host compiler (g++ / clang++ in PATH)
-# without ARDUINO_ARCH_* defines, see generator/README.md "Praeprozessor".
+# without ARDUINO_ARCH_* defines, see generator/README.md "Ein Ausdruck, zwei Verbraucher".
 name: Hardware profile
 
 on:
