@@ -2,6 +2,54 @@
 
 OpenKNX Hardware Definition Headers
 
+## Architecture
+
+### High-Level Overview
+
+Das Repo hat zwei Teile, die dieselben Makros lesen:
+
+1. **Board-Header** (`include/`): je Gerät ein Block `#ifdef DEVICE_<...>` mit Pins und Eigenschaften. Die Firmware
+   einer Applikation (OAM) bindet `HardwareConfig.h` ein; die Bibliothek stellt `include/` als Quell- und
+   Include-Pfad bereit (`library.json`).
+2. **Hardware-Profil-Generator** (`generator/`): liest die Board-Header mit den Build-Flags jedes PlatformIO-Envs der
+   Applikation und das Manifest `HardwareProfile.xml` der Applikation. Daraus erzeugt er das ETS-Modul der
+   Hardware-Auswahl und einen Firmware-Header mit dem eigenen Board.
+
+```mermaid
+flowchart LR
+  H["Board-Header<br/>include/HardwareConfig/**"] --> FW["Firmware der Applikation"]
+  H --> G["generator/Build-HardwareProfile.ps1"]
+  M["HardwareProfile.xml<br/>(Manifest der Applikation)"] --> G
+  P["platformio.ini<br/>release_* Envs"] --> G
+  G --> X["ETS-Modul, Feature-Flags, ETS-Skript, Bilder"]
+  G --> D["include/HardwareProfileData.h"]
+  G --> S["HardwareProfile.slots"]
+  X --> O["OpenKNXproducer -> knxprod -> ETS"]
+  D --> FW
+  O -- "Geräteabfrage FP 158/4" --> FW
+```
+
+| Pfad | Inhalt |
+|---|---|
+| `include/HardwareConfig.h` | bindet alle Hersteller-Header ein (nur `#include`-Zeilen) |
+| `include/HardwareConfig/OpenKNX/` | OpenKNX-Geräte (REG1, REG2, UP1, OpenKNXiao; PiPico/PiPico2 BCU Connector in `misc.h`) |
+| `include/HardwareConfig/Others/` | Drittanbieter und Partner (Gledopto, QuinLED, Adafruit, Smart-MF, AB-SmartHouse, Shelly) |
+| `include/HardwareConfig/Helpers/HardwarePorts.h` | `hwPortGpio()`, `hwRelayGpio()`: Ports und fest verdrahtete Relais des eigenen Boards für die Firmware |
+| `generator/` | Generator, Vorlagen, Fähigkeiten-Paket, Bilder; Einstieg [README](generator/README.md), Kurzweg [QUICKSTART](generator/QUICKSTART.md) |
+| `examples/HardwareProfileDemo/` | Demo-Applikation mit allen Funktionen des Generators |
+| `doc/` | Datenblätter von Bauteilen (`doc/datasheets`); `doc/OpenKNX` und `doc/OpenKNX-Ready` (Partner) sind Platzhalter (nur `.keep`), die Geräteunterlagen folgen |
+| `.github/workflows/hardware-profile.yml` | CI: `-ListIds` (doppelte IDs) und `-Check` der Demo (erzeugte Dateien aktuell) |
+
+Grundregeln, auf denen alles aufbaut:
+
+- **`DEVICE_HW_ID`** ist die Identität eines Geräts in ETS und Firmware und wird nie neu vergeben (siehe unten).
+- **Ein Makro, zwei Verbraucher:** Fähigkeiten, Ports, Relais und Pins stehen nur im Board-Header; ETS (über den
+  Generator) und Firmware lesen dieselben Defines.
+- **Was eine Applikation nicht nutzt, ändert ihre Ausgaben nicht:** jede Funktion des Generators ist über das Manifest
+  eingeschaltet; ohne den Eintrag bleiben die erzeugten Dateien byte-gleich.
+- **Stabile ETS-IDs:** Parameter je Board hängen an einem Slot je HW-ID (`HardwareProfile.slots`), nicht am Listenplatz;
+  ein App-Update behält die Werte.
+
 ## Regeln
 
 Jede Geräte-Definition erfolgt als ein Block, abhängig von `DEVICE_<DeviceID-Macro>`:
@@ -54,11 +102,11 @@ entsprechen `LevelShifterType` von OFM-NeoPixel; ein Build-Flag `-DNEOPIXEL_HW_L
 `#define HW_INFO_URL "https://go.openknx.de/kneopix"` (Kurzlink: kürzere URL, kleinerer QR-Code; der Link muss in
 eine Zeile von 150 px passen). Der [Generator](generator/README.md) zeigt sie in ETS als QR-Code mit dem Link ohne Schema
 darunter (ETS zeigt keine Links); ohne Define kein QR-Code. Die Firmware liest das Makro nicht. Gesetzt bei allen
-KNeoPix-Boards (V1, V1.5, jede MCU) und beim UP1 UART Gateway (0x1220).
+KNeoPix-Boards (V1, V1.5, jede MCU), beim UP1 UART Gateway (0x1220) und bei den Shelly-Geräten.
 
 `HW_INFO_TEXT` im Board-Block: kurze Beschreibung des Geräts, höchstens 255 Zeichen (ETS-Grenze, der Generator bricht
 sonst ab). Der Generator zeigt sie auf der Hardware-Seite unter dem Gerätenamen (mit Info-URL links neben dem QR-Code); ohne Define
-gilt der Standardtext der Applikation. Gesetzt bei allen KNeoPix- und Mini-Boards, QuinLED Dig-Quad V4 (Ethernet) und Gledopto GL-C-017WL.
+gilt der Standardtext der Applikation. Gesetzt bei allen KNeoPix- und Mini-Boards, QuinLED Dig-Quad V4 (Ethernet), Gledopto GL-C-017WL und den Shelly-Geräten.
 
 ## Hardware-ID (`DEVICE_HW_ID`)
 
@@ -107,7 +155,7 @@ Regeln:
 - Hardware eines Drittanbieters ohne OpenKNX-Support trägt im Board-Block zusätzlich
   `#define DEVICE_THIRD_PARTY`. Das ist eine Angabe des Headers, keine Folge der ID: Hauptgruppe 0x2 enthält auch
   OpenKNX-Ready-Partner. Der Generator kennt sie fest als Fähigkeit `ThirdParty` (Bit 0 der Geräteabfrage).
-  Gesetzt bei Gledopto (0x2000–0x2002) und QuinLED (0x2100–0x2140).
+  Gesetzt bei Gledopto (0x2000–0x2002), QuinLED (0x2100–0x2140) und Shelly (0x2500–0x2511).
 
 Alle IDs auflisten und auf Doppelte prüfen:
 
