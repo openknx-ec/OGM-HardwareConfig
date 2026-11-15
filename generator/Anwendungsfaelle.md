@@ -385,5 +385,6 @@ Mit OGM-HardwareConfig:
 
 Neue HW-ID: `Build-HardwareProfile.ps1 -NextId 0x25` (nächste freie in der Gruppe, mit Board-Block zum Ausfüllen).
 
-Die Namen `HW_POWER_METER`, `HW_TEMP_SENSOR`, `HW_SENSOR_*`, `HW_FRONT_CONTROLS` sind Vorschläge; sie gibt es in den
-Headern noch nicht.
+`HW_POWER_METER` und `HW_TEMP_SENSOR` setzen die Shelly-Header (`include/HardwareConfig/Others/Shelly.h`), z. B. Shelly
+Plus 1PM (0x2501) und die beiden Plus-2PM-Platinen PCB v0.1.5 (0x2502) und v0.1.9 (0x2503). `HW_SENSOR_*` und
+`HW_FRONT_CONTROLS` sind Vorschläge; sie gibt es in den Headern noch nicht.
