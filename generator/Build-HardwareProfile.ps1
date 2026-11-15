@@ -37,6 +37,8 @@ FILEPATH: OGM-HardwareConfig/generator/Build-HardwareProfile.ps1
     ("Bausteine", helpers/TemplateEngine.ps1; standard ones in generator/templates): ETS XML parts for op:include,
     the ETS script, C headers. Boards carry their ports (HW_PORT_* of the board header), capabilities and
     values; order="hwid" sorts them by DEVICE_HW_ID, ids="index" numbers them by position instead of slots.
+    <BoardTable name=... header=... scan=...> adds var <Prefix>_table_<name> to the script: per board the integer macros of an
+    OAM header (index = group 1 of scan) with the env flags, merged over the envs (any = OR, all = AND).
 
     -ListIds prints every DEVICE_HW_ID of OGM-HardwareConfig and stops on a duplicate ID. -NextId prints the next free
     DEVICE_HW_ID of a group and a board block to start from.
@@ -987,7 +989,88 @@ function Read-Manifest([string]$Path) {
   $cfNodes = @($root.SelectNodes("Conflicts"))
   if ($cfNodes.Count -gt 1) { Stop-WithError "<Conflicts> may appear only once" }
   if ($cfNodes.Count -eq 1) { $m.Conflicts = Read-ConflictsNode $m $cfNodes[0] $baseDir }
+  # <BoardTable name header scan>: integer macros of an OAM header per board (index = group 1 of scan); absent = no output changes
+  $m.BoardTables = @()
+  foreach ($bt in $root.SelectNodes("BoardTable")) {
+    foreach ($at in $bt.Attributes) {
+      if (@("name", "header", "scan") -cnotcontains $at.Name) { Stop-WithError ("<BoardTable>: attribute {0} is not supported (allowed: name, header, scan)" -f $at.Name) }
+    }
+    $t = @{ Name = "$($bt.name)"; HeaderAttr = "$($bt.header)"; Scan = "$($bt.scan)"; Found = $false }
+    if ($t.Name -notmatch '^[A-Za-z0-9]+$') { Stop-WithError ("<BoardTable name=`"{0}`">: name must be letters and digits" -f $t.Name) }
+    if (@($m.BoardTables | Where-Object { $_.Name -eq $t.Name }).Count -gt 0) { Stop-WithError ("<BoardTable name=`"{0}`">: name used twice" -f $t.Name) }
+    if (-not $t.HeaderAttr) { Stop-WithError ("<BoardTable name=`"{0}`">: header=... is missing" -f $t.Name) }
+    $t.Header = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($baseDir, $t.HeaderAttr))
+    if (-not (Test-Path -LiteralPath $t.Header -PathType Leaf)) { Stop-WithError ("<BoardTable name=`"{0}`">: header not found: {1}" -f $t.Name, $t.Header) }
+    try { $rx = New-Object System.Text.RegularExpressions.Regex($t.Scan) }
+    catch { Stop-WithError ("<BoardTable name=`"{0}`">: scan is no regular expression: {1}" -f $t.Name, $t.Scan) }
+    # exactly one numbered group: a named group (?<i>...) is not read as group 1
+    $named = @($rx.GetGroupNames() | Where-Object { $_ -notmatch '^\d+$' })
+    if (-not $t.Scan -or $rx.GetGroupNumbers().Count -ne 2 -or $named.Count -gt 0) { Stop-WithError ("<BoardTable name=`"{0}`">: scan needs exactly one unnamed group (the index), e.g. ^NAME_(\d+)`$: {1}" -f $t.Name, $t.Scan) }
+    $m.BoardTables += $t
+  }
+  if ($m.BoardTables.Count -gt 0 -and -not $m.Outputs.ContainsKey("script")) { Stop-WithError "<BoardTable> needs <Output script=...> (the table is part of the ETS script)" }
   return $m
+}
+
+# @brief Preprocessor run of a <BoardTable>: on a failure stop with the table name, the header and the first compiler error
+function Invoke-BoardTablePreprocessor($Table, [string]$Define, [string]$Source, [string[]]$Defines, [switch]$MacroList) {
+  try { return (Invoke-Preprocessor -Source $Source -Defines $Defines -MacroList:$MacroList) }
+  catch {
+    $err = "$($_.Exception.Message)"
+    $first = [regex]::Match($err, '\S*:\d+:\d+:\s*(fatal\s+)?error:[^|]*')
+    if ($first.Success) { $err = $first.Value.Trim() }
+    Stop-WithError ("{0}: <BoardTable name=`"{1}`">: preprocessing {2} failed: {3}" -f $Define, $Table.Name, $Table.HeaderAttr, $err)
+  }
+}
+
+# @brief <BoardTable> values of one env/board: macros of HardwareConfig.h + the table header whose name matches scan,
+#        index = group 1, value = the expanded integer; returns index -> value
+function Get-BoardTableValues($Table, [string]$Define, [string[]]$Defines) {
+  $src = "#include `"HardwareConfig.h`"`n#include `"" + ($Table.Header -replace '\\', '/') + "`"`n"
+  $names = @(Invoke-BoardTablePreprocessor $Table $Define $src $Defines -MacroList |
+    ForEach-Object { if ("$_" -match '^#define (\w+)') { $Matches[1] } } | Where-Object { $_ -cmatch $Table.Scan } | Sort-Object -CaseSensitive -Unique)
+  $vals = @{}
+  if ($names.Count -eq 0) { return $vals }
+  $Table.Found = $true
+  $sb = New-Object System.Text.StringBuilder
+  [void]$sb.Append($src)
+  for ($i = 0; $i -lt $names.Count; $i++) { [void]$sb.AppendLine("@@ `"BT$i`" " + $names[$i]) }
+  $res = @{}
+  foreach ($l in (Invoke-BoardTablePreprocessor $Table $Define $sb.ToString() $Defines)) { if ($l -match '^@@ "(\w+)" (.*)$') { $res[$Matches[1]] = $Matches[2] } }
+  $seen = @{}
+  for ($i = 0; $i -lt $names.Count; $i++) {
+    [void]($names[$i] -cmatch $Table.Scan)
+    $grp = "$($Matches[1])"
+    $idx = $null
+    if ($grp -match '^\d{1,4}$') { $idx = [int]$grp }
+    if ($null -eq $idx -or $idx -gt 1023) { Stop-WithError ("{0}: <BoardTable name=`"{1}`">: {2} - group 1 of scan must be an index 0..1023, is '{3}'" -f $Define, $Table.Name, $names[$i], $grp) }
+    if ($vals.ContainsKey($idx)) { Stop-WithError ("{0}: <BoardTable name=`"{1}`">: two macros for index {2} ({3}, {4})" -f $Define, $Table.Name, $idx, $seen[$idx], $names[$i]) }
+    $seen[$idx] = $names[$i]
+    # strip outer parentheses and casts in any order, e.g. ((uint8_t)1u), (uint8_t)(3); a value outside a cast's range stops
+    $vt = "$($res["BT$i"])".Trim()
+    $max = [long]2147483647
+    $castRx = '^\(\s*(unsigned\s+char|signed\s+char|unsigned\s+short|unsigned\s+int|unsigned\s+long|unsigned|char|short|int|long|u?int(8|16|32|64)_t)\s*\)\s*(.+)$'
+    $casts = New-Object System.Collections.Generic.List[string]
+    while ($true) {
+      if ($vt -match $castRx) {
+        $ct = $Matches[1] -replace '\s+', ' '
+        $vt = $Matches[3].Trim()
+        # plain char is unsigned on ARM/RISC-V and signed on Xtensa: its range depends on the target
+        if ($ct -eq 'char') { Stop-WithError ("{0}: {1}: {2} = '{3}': a plain (char) cast depends on the target, use int8_t or uint8_t" -f $Define, $Table.HeaderAttr, $names[$i], $res["BT$i"]) }
+        $casts.Add($ct)
+        $lim = @{ 'uint8_t' = 255; 'unsigned char' = 255; 'int8_t' = 127; 'signed char' = 127; 'uint16_t' = 65535; 'unsigned short' = 65535; 'int16_t' = 32767; 'short' = 32767 }
+        if ($lim.ContainsKey($ct) -and $lim[$ct] -lt $max) { $max = [long]$lim[$ct] }
+        continue
+      }
+      if ($vt -match '^\((.*)\)$') { $vt = $Matches[1].Trim(); continue }
+      break
+    }
+    $v = ConvertFrom-CInteger $vt
+    if ($null -eq $v -or $v -lt 0) { Stop-WithError ("{0}: {1}: {2} = '{3}' does not resolve to an integer 0..2147483647" -f $Define, $Table.HeaderAttr, $names[$i], $res["BT$i"]) }
+    if ($v -gt $max) { Stop-WithError ("{0}: {1}: {2} = '{3}': {4} is outside the range of the cast ({5}, 0..{6})" -f $Define, $Table.HeaderAttr, $names[$i], $res["BT$i"], $v, ($casts -join ', '), $max) }
+    $vals[[int]$idx] = [long]$v
+  }
+  return $vals
 }
 
 # @brief Integer attribute of a <Conflicts>/<Use> element: $null when absent, stop when not a number in Min..Max
@@ -1738,6 +1821,14 @@ function Resolve-Board($M, $BoardEntry) {
   }
   # a plain array: PowerShell 7 fails on @() over a generic list of hashtables ("Argument types do not match")
   $board.Ports = $board.Ports.ToArray()
+  # <BoardTable>: Any / All = index -> value; one env here, merged over the envs of the board later
+  if ($M.BoardTables.Count -gt 0) {
+    $board.Tables = @{}
+    foreach ($t in $M.BoardTables) {
+      $tv = Get-BoardTableValues $t $BoardEntry.Define $defines
+      $board.Tables[$t.Name] = @{ Any = $tv; All = $tv.Clone() }
+    }
+  }
   Set-BoardMaps $M $board
   return $board
 }
@@ -2565,6 +2656,21 @@ function New-ScriptJs($M, $Boards) {
     [void]$sb.AppendLine("")
     [void]$sb.AppendLine("// switch=`"true`" capabilities: on/off parameter, firmware state parameter, own bit, query bit, fixed-by bit (-1: none)")
     [void]$sb.AppendLine("var ${p}_switches = [`n" + ($swRows -join ",`n") + "`n];")
+  }
+  # <BoardTable>: one table per element; without one the script stays as before
+  foreach ($t in $M.BoardTables) {
+    $len = 0
+    foreach ($b in $Boards) { foreach ($ix in @($b.Tables[$t.Name].Any.Keys) + @($b.Tables[$t.Name].All.Keys)) { if ($ix + 1 -gt $len) { $len = $ix + 1 } } }
+    $tRows = @()
+    foreach ($b in $Boards) {
+      $tab = $b.Tables[$t.Name]
+      $any = @(for ($ix = 0; $ix -lt $len; $ix++) { if ($tab.Any.ContainsKey($ix)) { $tab.Any[$ix] } else { 0 } })
+      $all = @(for ($ix = 0; $ix -lt $len; $ix++) { if ($tab.All.ContainsKey($ix)) { $tab.All[$ix] } else { 0 } })
+      $tRows += ("    {0}: {{ any: [{1}], all: [{2}] }}" -f $b.HwId, ($any -join ", "), ($all -join ", "))
+    }
+    [void]$sb.AppendLine("")
+    [void]$sb.AppendLine(("// <BoardTable name=`"{0}`">: DEVICE_HW_ID -> {1} per index (group 1 of {2}); any = OR, all = AND over the envs, missing = 0" -f $t.Name, $t.HeaderAttr, $t.Scan))
+    [void]$sb.AppendLine("var ${p}_table_$($t.Name) = {`n" + ($tRows -join ",`n") + "`n};")
   }
   $swLoop = ""
   $swDone = @"
@@ -3520,6 +3626,7 @@ try {
   }
 
   foreach ($ps in $m.PortSets) { if ($ps.Hits -eq 0) { Write-Warn ("<Ports board=`"{0}`"> matches no board" -f $ps.Board) } }
+  foreach ($t in $m.BoardTables) { if (-not $t.Found) { Write-Warn ("<BoardTable name=`"{0}`">: no macro matches {1} on any board" -f $t.Name, $t.Scan) } }
 
   # several envs build the same board with different flags (e.g. TP and TP+WiFi): one ETS entry with the
   # union of what the builds can do; the device query reports what one device was built with
@@ -3551,6 +3658,18 @@ try {
       $first.TpGpios = @(@($first.TpGpios) + @($o.TpGpios) | ForEach-Object { [int]$_ } | Sort-Object -Unique)
       $first.TpStates = @($first.TpStates) + @($o.TpStates)
       for ($i = 0; $i -lt $first.Values.Count; $i++) { if ($o.Values[$i] -gt $first.Values[$i]) { $first.Values[$i] = $o.Values[$i] } }
+      # <BoardTable>: any = bitwise OR, all = bitwise AND per index over the envs (a missing index counts 0)
+      foreach ($tn in @($m.BoardTables | ForEach-Object { $_.Name })) {
+        $ta = $first.Tables[$tn]; $tb = $o.Tables[$tn]
+        foreach ($ix in @(@($ta.Any.Keys) + @($tb.Any.Keys) | Sort-Object -Unique)) {
+          $va = 0; if ($ta.Any.ContainsKey($ix)) { $va = $ta.Any[$ix] }
+          $vb = 0; if ($tb.Any.ContainsKey($ix)) { $vb = $tb.Any[$ix] }
+          $ta.Any[$ix] = [long]($va -bor $vb)
+          $va = 0; if ($ta.All.ContainsKey($ix)) { $va = $ta.All[$ix] }
+          $vb = 0; if ($tb.All.ContainsKey($ix)) { $vb = $tb.All[$ix] }
+          $ta.All[$ix] = [long]($va -band $vb)
+        }
+      }
       foreach ($rn in @($o.Pins.Keys)) {
         $merged = @($first.Pins[$rn])
         foreach ($pin in $o.Pins[$rn]) { if (@($merged | Where-Object { $_.Gpio -eq $pin.Gpio }).Count -eq 0) { $merged += $pin } }

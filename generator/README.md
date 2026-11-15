@@ -205,6 +205,43 @@ Eigene Fähigkeiten der Applikation (`<Capability>`) trägt der Entwickler danac
 | `<Notice when title><Text>…</Text>…</Notice>` | Hinweis-Kasten für Boards mit der Fähigkeit `when`, siehe [Hardware-Seite](#hardware-seite-gerätekarte) |
 | `portManualValue`, `portNoneValue` (Wurzel) | Werte der Port-Auswahlen der Applikation: 0..n-1 = Port n des Boards, `portManualValue` (0..254) = manueller GPIO, `portNoneValue` (0..255) = kein Port, jeder andere Wert (z. B. nie geschrieben 255) = kein GPIO. Nur zusammen, verschieden. Einmal angegeben, gilt es für die Konfliktprüfung (`<Conflicts>`) und den Firmware-Header (`signalGpio`, siehe [Port-Auswahl in der Firmware](#port-auswahl-in-der-firmware)). Ein angebotener Port auf einem der beiden Werte bricht den Lauf ab |
 | `<Conflicts output number value error reserved reservedError tpError>` | GPIO-Konfliktprüfung in ETS, siehe [GPIO-Konflikte](#gpio-konflikte-conflicts) und [Reservierte GPIOs](#reservierte-gpios-conflicts-reservedtrue) |
+| `<BoardTable name header scan>` | Zahlen-Tabelle je Board im ETS-Skript aus einem Header der OAM, siehe [Board-Tabellen](#board-tabellen-boardtable) |
+
+### Board-Tabellen (`<BoardTable>`)
+
+Werte, die die Firmware eines Envs aus seinen Build-Flags über einen Header der OAM ableitet (z. B. welche Effekte ein
+Target abschaltet), stehen damit auch im ETS-Skript.
+
+```xml
+<BoardTable name="EffectsOff" header="src/NeoPixelEffectGroups.h" scan="^NEO_FXOFF_(\d+)$" />
+```
+
+- Je Env (bzw. je `<Board>`-Zeile ohne Env) läuft der Präprozessor wie für die Fähigkeiten, mit demselben Compiler. Er
+  sieht genau: die `-D`-Flags des Envs (bzw. `flags` der `<Board>`-Zeile), die `ARDUINO_ARCH_*`-Defines der MCU,
+  `HardwareConfig.h`, danach `header` (Pfad relativ zum Manifest). Nicht dabei: `build_unflags`, `-include`, Header des
+  Frameworks oder der sdkconfig und `knxprod.h` (beim Lauf in Build-Release gibt es sie noch nicht). Der Header muss also
+  allein übersetzbar sein; scheitert der Präprozessor, nennt der Abbruch Board, `name`, `header` und den ersten
+  Compiler-Fehler.
+- Jedes Makro, dessen Name auf `scan` passt (regulärer Ausdruck, Groß-/Kleinschreibung zählt), ist ein Eintrag: die eine
+  unbenannte Gruppe = Index (0..1023; eine benannte Gruppe wie `(?<i>\d+)` bricht ab).
+- Wert: das expandierte Makro muss eine Zahl 0..2147483647 sein: dezimal, hex (`0x1F`) oder C-oktal (`017`), mit
+  `u`/`l`-Suffix, in Klammern und mit Casts wie `(uint8_t)` in beliebiger Reihenfolge (`((uint8_t)3u)`, `(uint8_t)(3)`);
+  ein Makro, das darauf expandiert, geht auch. Ein Wert außerhalb des Cast-Typs (`(uint8_t)300`, `(int8_t)200`) bricht ab,
+  statt wie C abzuschneiden. Ausdrücke wie `(1 << 3)` oder `(A | B)` rechnet der Generator nicht aus: Abbruch mit Board,
+  Datei und Makro.
+- Mehrere Envs eines Boards: `any` = bitweises ODER, `all` = bitweises UND je Index; ein fehlender Index zählt 0. Gewinnt
+  eine `<Board>`-Zeile mit derselben HW-ID gegen die Envs (siehe `<Boards>`), kommt die Tabelle des Boards nur aus den
+  `flags` dieser Zeile.
+- Ausgabe im ETS-Skript (`<Output script>`, Pflicht), Index = Position, fehlender Index = 0:
+  ```js
+  // <BoardTable name="EffectsOff">: DEVICE_HW_ID -> src/NeoPixelEffectGroups.h per index ...
+  var HWP_table_EffectsOff = {
+      4880: { any: [1, 1, 1, 0, 4], all: [0, 1, 0, 0, 0] },
+      4896: { any: [0, 1, 1, 0, 0], all: [0, 1, 1, 0, 0] }
+  };
+  ```
+- Abbruch: `name` nicht nur Buchstaben und Ziffern oder doppelt, `header` fehlt, `scan` ohne genau eine unbenannte
+  Gruppe, zwei Makros für einen Index. Warnung: kein Makro auf irgendeinem Board. Ohne `<BoardTable>` bleiben alle Ausgaben gleich.
 
 ## Hardware-Seite (Gerätekarte)
 

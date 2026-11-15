@@ -137,6 +137,7 @@ auch ohne `<Import>` und ohne `header`.
 | `<Ports board use excludeRelayPins max>` | Teilmenge der `HW_PORT_*` je Board | alle beschriebenen Ports |
 | `<ReservedPins macros>` | Pins, die die Applikation nie anbietet / als reserviert meldet | jeder Pin erlaubt |
 | `<Conflicts>` (`reserved="true"`) | GPIO-Konfliktprüfung in ETS (+ reservierte Pins, `isReservedGpio`) | keine Prüfung, Ausgaben unverändert |
+| `<BoardTable name header scan>` | Zahlen-Tabelle je Board im ETS-Skript (`<Prefix>_table_<name>`) aus Makros eines OAM-Headers mit den Build-Flags der Envs | keine Tabelle, Ausgaben unverändert |
 | `<Generate template output>` | eigene Dateien aus Vorlagen (z. B. Port-Parameter je Board) | keine |
 
 ### Board-Header
@@ -153,7 +154,7 @@ auch ohne `<Import>` und ohne `header`.
 Details zu jeder Zeile: [README](README.md#manifest), [Hardware-Seite](README.md#hardware-seite-gerätekarte),
 [Ports](README.md#ports-hw_port_-im-board-header), [Port-Auswahl](README.md#port-auswahl-in-der-firmware),
 [Relais](README.md#relais-hw_relay_-im-board-header), [GPIO-Konflikte](README.md#gpio-konflikte-conflicts),
-[Reservierte GPIOs](README.md#reservierte-gpios-conflicts-reservedtrue), [Vorlagen](README.md#vorlagen-bausteine).
+[Board-Tabellen](README.md#board-tabellen-boardtable), [Reservierte GPIOs](README.md#reservierte-gpios-conflicts-reservedtrue), [Vorlagen](README.md#vorlagen-bausteine).
 
 ### Erzeugt, aber nicht verwendet
 
