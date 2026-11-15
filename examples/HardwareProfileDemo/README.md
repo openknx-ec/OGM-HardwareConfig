@@ -37,7 +37,13 @@ Header an (`<IncludePath>include</IncludePath>`). Sie haben keine Firmware.
 
 ## Bauen
 
-Einmalig `lib/` anlegen (Links auf OGM-Common, knx, TPUart, OFM-ConfigTransfer und `lib/OGM-HardwareConfig` → `../../..`).
+Einmalig `lib/` anlegen (Links, `lib/` ist nicht im Repo):
+
+- Generator (`Build-HardwareProfile.ps1`, auch `-Check` und die CI): `lib/OGM-HardwareConfig` → `../../..` (dieses Repo)
+  und `lib/OGM-Common` → ein Checkout von OGM-Common (die CI legt ihn unter `_deps/OGM-Common` ab).
+- knxprod (OpenKNXproducer) zusätzlich: `lib/OFM-ConfigTransfer` (die Applikation bindet `ConfigTransfer.share.xml` ein).
+- Firmware zusätzlich: `lib/knx` und `lib/TPUart` (knx bindet `TPUart/Interface/Abstract.h` in `platform.h` ohne
+  Bedingung ein, auch für IP-Builds).
 
 ```
 pwsh ../../generator/Build-HardwareProfile.ps1          # Profil erzeugen (-Check: nur prüfen)
